@@ -245,7 +245,7 @@ export function DriveScreen({
         <div className="flex flex-col gap-6">
           {folders.length > 0 && (
             <div>
-              <h2 className="text-xs font-semibold text-gray-400 uppercase tracking-widest mb-3">Pastas teste 2</h2>
+              <h2 className="text-xs font-semibold text-gray-400 uppercase tracking-widest mb-3">Pastas</h2>
               <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3">
                 {folders.map((folder) => (
                   <FolderCard
