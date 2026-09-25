@@ -23,16 +23,16 @@ export function SubtleCard({ label, value, sub, icon, color }: StatCardProps) {
 
 export function HighlightCard({ label, value, sub, icon, color }: StatCardProps) {
   return (
-    <div className="rounded-2xl p-6 flex flex-col gap-4" style={{ backgroundColor: color }}>
+    <div className="bg-white rounded-2xl border border-gray-100 p-6 flex flex-col gap-4">
       <div className="flex items-center justify-between">
-        <p className="text-sm font-semibold text-white/80 uppercase tracking-wide">{label}</p>
-        <div className="w-9 h-9 rounded-xl flex items-center justify-center bg-white/15">
-          <span className="text-white">{icon}</span>
+        <p className="text-sm font-semibold text-gray-500 uppercase tracking-wide">{label}</p>
+        <div className="w-9 h-9 rounded-xl flex items-center justify-center" style={{ backgroundColor: `${color}14` }}>
+          <span style={{ color }}>{icon}</span>
         </div>
       </div>
       <div>
-        <p className="text-3xl font-bold text-white leading-none">{value}</p>
-        {sub && <p className="text-sm text-white/70 mt-1.5">{sub}</p>}
+        <p className="text-3xl font-bold leading-none" style={{ color }}>{value}</p>
+        {sub && <p className="text-sm text-gray-400 mt-1.5">{sub}</p>}
       </div>
     </div>
   )
