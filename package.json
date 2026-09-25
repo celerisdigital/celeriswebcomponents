@@ -11,7 +11,7 @@
     "registry": "https://npm.pkg.github.com"
   },
   "engines": {
-    "node": ">=20"
+    "node": ">=22"
   },
   "files": ["src"],
   "exports": {
