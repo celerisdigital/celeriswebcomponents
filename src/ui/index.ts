@@ -85,3 +85,6 @@ export { SubtleCard, HighlightCard } from './stat-card'
 
 export { RadioGroup } from './radio-group'
 export type { RadioGroupProps, RadioGroupOption } from './radio-group'
+
+export { ImageUploadField } from './image-upload-field'
+export type { ImageUploadFieldProps } from './image-upload-field'

@@ -138,18 +138,20 @@ republicar a mesma.
 
 ```ts
 transpilePackages: ['@celerisdigital/celeriswebcomponents'],
-turbopack: {
-  resolveAlias: {
-    react: './node_modules/react',
-    'react-dom': './node_modules/react-dom',
-    '@tanstack/react-query': './node_modules/@tanstack/react-query',
-  },
-},
 ```
 
-O `resolveAlias` evita cópias duplicadas das três libs: React duplicado quebra hooks e React Query
-duplicado separa o cache. Use caminho **relativo** — path absoluto do Windows falha com
-`windows imports are not implemented yet`.
+O pacote publica TypeScript cru; o `transpilePackages` faz o Next compilá-lo junto com a app.
+Não é preciso `turbopack.resolveAlias` nem `experimental.externalDir` — os dois só existiam enquanto
+as apps consumiam a lib por `file:` (symlink para fora da raiz, com cópias próprias de React).
+
+**`.npmrc` do projeto**, commitado:
+
+```
+@celerisdigital:registry=https://npm.pkg.github.com
+```
+
+Só o mapeamento do escopo, nunca token. Cada dev coloca o próprio token classic com `read:packages`
+no `~/.npmrc` — o README de cada app explica o passo a passo.
 
 **`globals.css`**
 
@@ -179,6 +181,51 @@ const token = await getAccessToken()
 
 ---
 
+## Deploy da app consumidora
+
+O build de produção roda `yarn install` numa máquina limpa, sem o `~/.npmrc` de ninguém. Sem estes
+três ajustes, o GitHub Packages responde `401` e o deploy quebra.
+
+**1. Liberar a app no pacote** — só uma vez, pela UI do GitHub: página do pacote →
+*Package settings* → *Manage Actions access* → adicionar o repo da app com role **Read**.
+
+**2. Dockerfile** — o `.npmrc` do projeto entra no `COPY`; o token entra como secret montado:
+
+```dockerfile
+# syntax=docker/dockerfile:1
+
+COPY package.json yarn.lock .npmrc ./
+RUN --mount=type=secret,id=npmrc,target=/root/.npmrc yarn install --frozen-lockfile
+```
+
+O secret só existe durante aquele `RUN` e não fica em nenhuma camada da imagem. **Nunca** usar
+`ARG NPM_TOKEN` + `echo > .npmrc` ou `ENV`: o token fica gravado na imagem e vai junto para o
+registry de containers.
+
+**3. Workflow** — o `GITHUB_TOKEN` automático basta, sem PAT nem secret cadastrado:
+
+```yaml
+jobs:
+  deploy:
+    permissions:
+      contents: read
+      packages: read
+    steps:
+      - name: Build and push image
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          printf '//npm.pkg.github.com/:_authToken=%s\n' "$NODE_AUTH_TOKEN" > "$RUNNER_TEMP/npmrc"
+          docker build -f pipelines/Dockerfile --secret id=npmrc,src="$RUNNER_TEMP/npmrc" -t $IMAGE .
+```
+
+O `GITHUB_TOKEN` só consegue ler o pacote porque o passo 1 foi feito. O arquivo em `$RUNNER_TEMP` é
+apagado pelo runner ao fim do job.
+
+Referência pronta: `pipelines/Dockerfile` e `.github/workflows/*.yml` do `d7-frontend`.
+
+---
+
 ## Primitivos
 
 O design system vive aqui, e é a única fonte. Uma app que mantém a própria cópia de um primitivo
@@ -192,16 +239,16 @@ import { cn, formatDocument, maskCPF } from '@celerisdigital/celeriswebcomponent
 
 | Subpath | O que traz |
 |---|---|
-| `/ui` | `Button` `Input` `Select` `MultiSelect` `Table` `Modal` `ConfirmModal` `Field` `Section` `Badge` `Checkbox` `Switch` `Tabs` `Tooltip` `Skeleton` `TableSkeleton` `Pagination` `BackButton` `FileDropzone` `FileTypeIcon` `AttachmentList` `ImageAnalyzer` `CollapsibleCard` `EdgeScroll` `CopyableValue` `TagsInput` `RadioGroup` `CurrencyInput` `PercentInput` `DateInput` `DateRangeInput` `DateRangePicker` `SubtleCard` `HighlightCard` |
+| `/ui` | `Button` `Input` `Select` `MultiSelect` `Table` `Modal` `ConfirmModal` `Field` `Section` `Badge` `Checkbox` `Switch` `Tabs` `Tooltip` `Skeleton` `TableSkeleton` `Pagination` `BackButton` `FileDropzone` `FileTypeIcon` `AttachmentList` `ImageAnalyzer` `CollapsibleCard` `EdgeScroll` `CopyableValue` `TagsInput` `RadioGroup` `CurrencyInput` `PercentInput` `DateInput` `DateRangeInput` `DateRangePicker` `SubtleCard` `HighlightCard` `ImageUploadField` |
 | `/contexts` | `ConfirmModalProvider`/`useConfirm`, `ToastProvider`/`useToast`, `FilePreviewProvider`/`useShowFile`, `NavLoadingProvider`/`useNavLoading`/`NavLoadingBar` |
-| `/lib` | `cn`, `extractErrorMessage`, `useBack`, e o `format` completo (`formatCurrency`, `formatDocument`, `maskCPF`, `maskCNPJ`, `maskPhone`, `maskCEP`, `formatDate…`) |
+| `/lib` | `cn`, `extractErrorMessage`, `useBack`, `useQueryModal`, `compressImage`, e o `format` completo (`formatCurrency`, `formatDocument`, `maskCPF`, `maskCNPJ`, `maskPhone`, `maskCEP`, `formatDate…`) |
+| `/rich-text` | `RichTextEditor`, `RichTextContent`, `isRichTextEmpty`, `sanitizeRichText`, `toEditorContent` — os estilos vêm junto com os componentes; traz as dependências `@tiptap/*` e `isomorphic-dompurify`, por isso fica fora do `/ui` |
 
 **Cores saem de token, nunca de hex.** Os primitivos usam `bg-brand`, `text-brand-foreground`,
 `bg-primary` — cada app resolve para a própria identidade pelas CSS vars do seu `globals.css`.
 Hex literal num primitivo faz as duas apps ficarem com a cor de uma delas.
 
-Fora do pacote de propósito: `rich-text/*` (arrastaria 5 dependências `@tiptap`),
-`image-upload-field` (só no d7), `conflict-banner` e `stepper` (só no trivor).
+Fora do pacote de propósito: `conflict-banner` e `stepper` (só no trivor).
 
 ---
 
@@ -226,6 +273,38 @@ import { DriveSection, DriveSkeleton } from '@celerisdigital/celeriswebcomponent
 
 O upload vai **direto do browser para a API** — a API precisa aceitar preflight
 `OPTIONS` com `Authorization` para a origem da app.
+
+---
+
+## Módulo: Informativos
+
+```tsx
+import {
+  InformativesListSection,
+  InformativesListSkeleton,
+  InformativeCreateSection,
+  InformativeEditSection,
+  InformativeFormSkeleton,
+  InformativesFeedSection,
+  InformativesFeedSkeleton,
+  InformativesModalQueueSection,
+} from '@celerisdigital/celeriswebcomponents/informatives'
+```
+
+Cada componente é a tela inteira (título, voltar, ações, filtros, conteúdo). A app monta só o
+container da página, o gate de permissão e o `<Suspense>` com o skeleton correspondente:
+
+| Onde | Componente | Props |
+|---|---|---|
+| gestão (ex: `/gerenciar-informativos`) | `InformativesListSection` | `token`, `apiBaseUrl`, `basePath`, `backFallback`, `roles`, `limit`, `offset`, `title`, `canCreate`, `canUpdate`, `canDelete` |
+| `<basePath>/novo` | `InformativeCreateSection` | `basePath`, `roles` |
+| `<basePath>/[id]/editar` | `InformativeEditSection` — chama `notFound()` se o id não existe | `token`, `apiBaseUrl`, `basePath`, `roles`, `id` |
+| feed (ex: `/informativos`) | `InformativesFeedSection` | `token`, `apiBaseUrl` |
+| layout privado, dentro do `CelerisProvider` | `InformativesModalQueueSection` em `<Suspense fallback={null}>` | `token`, `apiBaseUrl` |
+
+`limit` (padrão 10), `offset` e `title` vêm dos search params da página de gestão. O modal de
+detalhe usa `?informativeId=`. Criação, edição e exclusão invalidam `['informatives']`; a imagem é
+comprimida no browser antes do upload, que vai direto para a API.
 
 ---
 

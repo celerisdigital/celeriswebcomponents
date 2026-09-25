@@ -3,3 +3,9 @@ export const driveKeys = {
   folders: (parentFolderId: number | undefined) => ['drive', 'folders', parentFolderId ?? null] as const,
   files: (folderId: number | undefined) => ['drive', 'files', folderId ?? null] as const,
 }
+
+export const informativeKeys = {
+  all: ['informatives'] as const,
+  list: (query: { limit: number; offset: number; title?: string }) => ['informatives', 'list', query] as const,
+  active: ['informatives', 'active'] as const,
+}
