@@ -1,3 +1,5 @@
+import type { IInformative } from './types'
+
 export type InformativeStatus = 'scheduled' | 'active' | 'expired'
 
 function pad(n: number): string {
@@ -51,4 +53,16 @@ export const STATUS_VARIANT: Record<InformativeStatus, 'info' | 'success' | 'def
   scheduled: 'info',
   active: 'success',
   expired: 'default',
+}
+
+export function periodLabel(item: Pick<IInformative, 'initialDate' | 'finalDate'>): string {
+  const start = displayDateOnly(item.initialDate)
+  const end = displayDateOnly(item.finalDate)
+  if (!start && !end) return 'Sem prazo'
+
+  if (start && end) return `${start} – ${end}`
+
+  if (start) return `A partir de ${start}`
+
+  return `Até ${end}`
 }

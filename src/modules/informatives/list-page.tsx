@@ -8,16 +8,11 @@ import { prefetchRoleOptions } from '../../roles/api'
 import { fetchInformatives } from './api'
 import { CreateInformativeLink } from './create-link'
 import { InformativesFilters } from './filters'
+import { buildListQueries, type InformativesListSearchParams } from './list-queries'
 import { InformativesListScreen } from './list-screen'
 import { InformativesPageHeader } from './page-header'
 import type { InformativesPermissions } from './permissions'
 import { InformativesListSkeleton } from './skeletons'
-
-interface InformativesListSearchParams {
-  title?: string
-  limit?: string
-  offset?: string
-}
 
 export interface InformativesListPageProps {
   config: CelerisConfig
@@ -53,13 +48,17 @@ async function ListContent({ config, permissions, basePath, deniedRedirect, sear
   const [perms, sp, http] = await Promise.all([permissions, searchParams, createServerHttp(config)])
   if (!perms.canRead) redirect(deniedRedirect)
 
-  const query = { limit: Number(sp.limit) || 10, offset: Number(sp.offset) || 0, title: sp.title || undefined }
+  const queries = buildListQueries(sp)
   const queryClient = new QueryClient()
 
   await Promise.all([
     queryClient.prefetchQuery({
-      queryKey: informativeKeys.list(query),
-      queryFn: () => fetchInformatives(http, query),
+      queryKey: informativeKeys.list(queries.active),
+      queryFn: () => fetchInformatives(http, queries.active),
+    }),
+    queryClient.prefetchQuery({
+      queryKey: informativeKeys.list(queries.expired),
+      queryFn: () => fetchInformatives(http, queries.expired),
     }),
     prefetchRoleOptions(queryClient, http),
   ])
@@ -68,7 +67,7 @@ async function ListContent({ config, permissions, basePath, deniedRedirect, sear
     <HydrationBoundary state={dehydrate(queryClient)}>
       <InformativesListScreen
         basePath={basePath}
-        query={query}
+        queries={queries}
         canUpdate={perms.canUpdate}
         canDelete={perms.canDelete}
       />

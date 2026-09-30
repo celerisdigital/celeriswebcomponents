@@ -7,10 +7,11 @@ import {
   createInformative,
   deleteInformative,
   markInformativeViewed,
+  reorderInformatives,
   updateInformative,
   uploadInformativeImage,
 } from './api'
-import type { InformativePayload } from './types'
+import type { IInformative, InformativePayload, InformativesPage, InformativesQuery } from './types'
 
 function useInvalidateInformatives() {
   const queryClient = useQueryClient()
@@ -45,6 +46,27 @@ export function useDeleteInformative() {
   return useMutation({
     mutationFn: (id: number) => deleteInformative(http, id),
     onSuccess: invalidate,
+  })
+}
+
+export function useReorderInformatives(query: InformativesQuery) {
+  const http = useHttp()
+  const queryClient = useQueryClient()
+  const queryKey = informativeKeys.list(query)
+
+  return useMutation({
+    mutationFn: (items: IInformative[]) => reorderInformatives(http, items.map((item) => item.id)),
+    onMutate: async (items) => {
+      await queryClient.cancelQueries({ queryKey })
+      const previous = queryClient.getQueryData<InformativesPage>(queryKey)
+      if (previous) queryClient.setQueryData<InformativesPage>(queryKey, { ...previous, rows: items })
+
+      return { previous }
+    },
+    onError: (_error, _items, context) => {
+      if (context?.previous) queryClient.setQueryData(queryKey, context.previous)
+    },
+    onSettled: () => queryClient.invalidateQueries({ queryKey: informativeKeys.all }),
   })
 }
 

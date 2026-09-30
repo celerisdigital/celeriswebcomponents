@@ -14,7 +14,7 @@ O pacote entrega duas coisas:
 O repositório é público e a app instala direto dele, pela tag — sem token, sem `.npmrc`:
 
 ```json
-"@celerisdigital/celeriswebcomponents": "github:celerisdigital/celeriswebcomponents#v1.1.0"
+"@celerisdigital/celeriswebcomponents": "github:celerisdigital/celeriswebcomponents#v2.0.0"
 ```
 
 Sempre uma tag fixa: cada app aponta uma versão e atualiza quando decidir. Atualizar uma app não mexe
@@ -182,7 +182,7 @@ import { cn, formatDocument, maskCPF } from '@celerisdigital/celeriswebcomponent
 
 | Subpath | O que traz |
 |---|---|
-| `/ui` | `Button` `Input` `Select` `MultiSelect` `Table` `Modal` `ConfirmModal` `Field` `Section` `Badge` `Checkbox` `Switch` `Tabs` `Tooltip` `Skeleton` `TableSkeleton` `Pagination` `BackButton` `FileDropzone` `FileTypeIcon` `AttachmentList` `ImageAnalyzer` `CollapsibleCard` `EdgeScroll` `CopyableValue` `TagsInput` `RadioGroup` `CurrencyInput` `PercentInput` `DateInput` `DateRangeInput` `DateRangePicker` `SubtleCard` `HighlightCard` `ImageUploadField` |
+| `/ui` | `Button` `Input` `Select` `MultiSelect` `Table` `SortableList` `Modal` `ConfirmModal` `Field` `Section` `Badge` `Checkbox` `Switch` `Tabs` `Tooltip` `Skeleton` `TableSkeleton` `Pagination` `BackButton` `FileDropzone` `FileTypeIcon` `AttachmentList` `ImageAnalyzer` `CollapsibleCard` `EdgeScroll` `CopyableValue` `TagsInput` `RadioGroup` `CurrencyInput` `PercentInput` `DateInput` `DateRangeInput` `DateRangePicker` `SubtleCard` `HighlightCard` `ImageUploadField` |
 | `/contexts` | `ConfirmModalProvider`/`useConfirm`, `ToastProvider`/`useToast`, `FilePreviewProvider`/`useShowFile`, `NavLoadingProvider`/`useNavLoading`/`NavLoadingBar` |
 | `/lib` | `cn`, `extractErrorMessage`, `useBack`, `useQueryModal`, `compressImage`, e o `format` completo (`formatCurrency`, `formatDocument`, `maskCPF`, `maskCNPJ`, `maskPhone`, `maskCEP`, `formatDate…`) |
 | `/rich-text` | `RichTextEditor`, `RichTextContent`, `isRichTextEmpty`, `sanitizeRichText`, `toEditorContent` — os estilos vêm junto com os componentes; traz as dependências `@tiptap/*` e `isomorphic-dompurify`, por isso fica fora do `/ui` |
@@ -250,8 +250,10 @@ Cada Page pede só as permissões que usa: a gestão, `{ canRead, canCreate, can
 para `deniedRedirect`; sem `canCreate`/`canUpdate`, novo/editar voltam para `basePath`. Esses redirects são
 rede de segurança — o guard de rota da app continua sendo a primeira barreira.
 
-A gestão é paginada por `limit` (padrão 10) e `offset`, com busca por `title`. O detalhe usa
-`?informativeId=`. A imagem é comprimida no browser antes do upload, que vai direto para a API.
+A gestão tem duas seções: **ativos e agendados**, sem paginação e reordenáveis por arraste (ou ↑/↓ na alça)
+com `canUpdate` e sem busca ativa; e **expirados**, paginados por `limit`/`offset`. A ordem vale para o feed
+e para a fila de modais. O detalhe usa `?informativeId=`. A imagem é comprimida no browser antes do upload,
+que vai direto para a API.
 
 ---
 

@@ -1,49 +1,43 @@
 'use client'
 
-import { useRouter } from 'next/navigation'
-import { LuPencil, LuTrash2 } from 'react-icons/lu'
-import { Badge, Pagination, Table, type Column } from '../../ui'
 import { useConfirm } from '../../contexts/confirm-modal-context'
 import { useQueryModal } from '../../lib/use-query-modal'
 import { useRoleOptions } from '../../roles/queries'
+import { ActiveInformativesList } from './active-list'
 import { InformativeDetailModal } from './detail-modal'
 import { informativeErrorMessage } from './errors'
+import { ExpiredInformativesTable } from './expired-table'
+import type { InformativesListQueries } from './list-queries'
 import { useDeleteInformative } from './mutations'
 import { useInformatives } from './queries'
-import { RoleBadges } from './role-badges'
-import { deriveStatus, displayDateOnly, STATUS_LABEL, STATUS_VARIANT } from './status'
-import type { IInformative, InformativesQuery } from './types'
+import type { IInformative } from './types'
 
 interface Props {
   basePath: string
-  query: InformativesQuery
+  queries: InformativesListQueries
   canUpdate: boolean
   canDelete: boolean
 }
 
-function periodLabel(item: IInformative): string {
-  const start = displayDateOnly(item.initialDate)
-  const end = displayDateOnly(item.finalDate)
-  if (!start && !end) return 'Sem prazo'
-
-  if (start && end) return `${start} – ${end}`
-
-  if (start) return `A partir de ${start}`
-
-  return `Até ${end}`
-}
-
-export function InformativesListScreen({ basePath, query, canUpdate, canDelete }: Props) {
-  const router = useRouter()
+export function InformativesListScreen({ basePath, queries, canUpdate, canDelete }: Props) {
   const confirm = useConfirm()
   const deleteInformative = useDeleteInformative()
-  const { data, isError } = useInformatives(query)
+  const active = useInformatives(queries.active)
+  const expired = useInformatives(queries.expired)
   const { data: roles = [] } = useRoleOptions()
   const { id: selectedId, open, close } = useQueryModal('informativeId')
 
-  const items = data?.rows ?? []
+  const activeItems = active.data?.rows ?? []
+  const expiredItems = expired.data?.rows ?? []
+  const expiredTotal = expired.data?.meta.total ?? 0
   const roleNames: Record<string, string> = Object.fromEntries(roles.map((r) => [r.id, r.name] as const))
-  const selected = selectedId ? items.find((i) => String(i.id) === selectedId) ?? null : null
+  const selected = selectedId
+    ? [...activeItems, ...expiredItems].find((i) => String(i.id) === selectedId) ?? null
+    : null
+
+  function openItem(item: IInformative) {
+    open(String(item.id))
+  }
 
   function askDelete(item: IInformative) {
     confirm({
@@ -61,84 +55,39 @@ export function InformativesListScreen({ basePath, query, canUpdate, canDelete }
     })
   }
 
-  const columns: Column<IInformative>[] = [
-    {
-      header: 'Título',
-      cell: (i) => <span className="font-medium text-gray-800">{i.title}</span>,
-    },
-    {
-      header: 'Exibição',
-      cell: (i) => (
-        <div className="flex flex-wrap gap-1">
-          {i.banner && <Badge variant="info">Informe Fixado</Badge>}
-          {i.modal && <Badge variant="info">Modal</Badge>}
-          {i.singleView && <Badge variant="default">1x</Badge>}
-        </div>
-      ),
-    },
-    {
-      header: 'Público',
-      cell: (i) => <RoleBadges roleIds={i.roleIds} roleNames={roleNames} />,
-    },
-    {
-      header: 'Período',
-      cell: (i) => periodLabel(i),
-      className: 'text-gray-600 whitespace-nowrap',
-    },
-    {
-      header: 'Status',
-      cell: (i) => {
-        const status = deriveStatus(i.initialDate, i.finalDate)
-
-        return <Badge variant={STATUS_VARIANT[status]}>{STATUS_LABEL[status]}</Badge>
-      },
-    },
-    {
-      header: '',
-      cell: (i) => (
-        <div className="flex items-center justify-end gap-2">
-          {canUpdate && (
-            <button
-              onClick={(e) => {
-                e.stopPropagation()
-                router.push(`${basePath}/${i.id}/editar`)
-              }}
-              className="text-gray-500 hover:text-gray-800 transition-colors"
-              aria-label={`Editar ${i.title}`}
-            >
-              <LuPencil size={16} />
-            </button>
-          )}
-          {canDelete && (
-            <button
-              onClick={(e) => {
-                e.stopPropagation()
-                askDelete(i)
-              }}
-              className="text-gray-500 hover:text-red-600 transition-colors"
-              aria-label={`Excluir ${i.title}`}
-            >
-              <LuTrash2 size={16} />
-            </button>
-          )}
-        </div>
-      ),
-      className: 'text-right',
-    },
-  ]
-
   return (
     <>
-      {isError &&<p className="text-sm text-red-500">Não foi possível carregar os informativos.</p>}
-      <Table
-        columns={columns}
-        rows={items}
-        keyExtractor={(i) => i.id}
-        empty="Nenhum informativo encontrado."
-        onRowClick={(i) => open(String(i.id))}
+      {(active.isError || expired.isError) && (
+        <p className="text-sm text-red-500">Não foi possível carregar os informativos.</p>
+      )}
+
+      <h2 className="text-xs font-semibold text-gray-400 uppercase tracking-widest">Ativos e agendados</h2>
+      <ActiveInformativesList
+        items={activeItems}
+        query={queries.active}
+        basePath={basePath}
+        roleNames={roleNames}
+        canUpdate={canUpdate}
+        canDelete={canDelete}
+        onOpen={openItem}
+        onDelete={askDelete}
       />
+
+      {expiredTotal > 0 && (
+        <ExpiredInformativesTable
+          items={expiredItems}
+          total={expiredTotal}
+          query={queries.expired}
+          basePath={basePath}
+          roleNames={roleNames}
+          canUpdate={canUpdate}
+          canDelete={canDelete}
+          onOpen={openItem}
+          onDelete={askDelete}
+        />
+      )}
+
       <InformativeDetailModal item={selected} roleNames={roleNames} onClose={close} />
-      <Pagination total={data?.meta.total ?? 0} limit={query.limit} offset={query.offset} />
     </>
   )
 }

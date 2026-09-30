@@ -28,6 +28,9 @@ export type { ConfirmModalProps, ConfirmModalVariant } from './confirm-modal'
 export { Table } from './table'
 export type { TableProps, Column } from './table'
 
+export { SortableList } from './sortable-list'
+export type { SortableListProps, SortableItemState } from './sortable-list'
+
 export { DateRangeInput } from './date-range-input'
 export type { DateRangeInputProps } from './date-range-input'
 

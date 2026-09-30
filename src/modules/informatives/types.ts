@@ -19,10 +19,13 @@ export interface IActiveInformative extends Omit<IInformative, 'roleIds'> {
   alreadyViewed: boolean
 }
 
+export type InformativeListStatus = 'current' | 'expired'
+
 export interface InformativesQuery {
   limit: number
   offset: number
   title?: string
+  status?: InformativeListStatus
 }
 
 export interface InformativesPage {

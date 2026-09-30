@@ -13,6 +13,7 @@ export async function fetchInformatives(http: AxiosInstance, query: Informatives
       page: Math.floor(query.offset / query.limit) + 1,
       pageSize: query.limit,
       title: query.title || undefined,
+      status: query.status,
     },
   })
 
@@ -41,6 +42,10 @@ export async function updateInformative(http: AxiosInstance, id: number, body: I
 
 export async function deleteInformative(http: AxiosInstance, id: number): Promise<void> {
   await http.delete(`/informatives/${id}`)
+}
+
+export async function reorderInformatives(http: AxiosInstance, ids: number[]): Promise<void> {
+  await http.put('/informatives/order', { ids })
 }
 
 export async function fetchActiveInformatives(http: AxiosInstance): Promise<IActiveInformative[]> {

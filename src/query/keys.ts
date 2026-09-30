@@ -6,7 +6,8 @@ export const driveKeys = {
 
 export const informativeKeys = {
   all: ['informatives'] as const,
-  list: (query: { limit: number; offset: number; title?: string }) => ['informatives', 'list', query] as const,
+  list: (query: { limit: number; offset: number; title?: string; status?: 'current' | 'expired' }) =>
+    ['informatives', 'list', query] as const,
   active: ['informatives', 'active'] as const,
 }
 

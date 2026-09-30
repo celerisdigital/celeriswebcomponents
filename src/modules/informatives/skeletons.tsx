@@ -1,7 +1,16 @@
-import { Skeleton, TableSkeleton } from '../../ui'
+import { Skeleton } from '../../ui'
 
 export function InformativesListSkeleton() {
-  return <TableSkeleton columns={6} rows={10} />
+  return (
+    <>
+      <Skeleton className="h-3 w-36" />
+      <div className="flex flex-col gap-2">
+        {Array.from({ length: 5 }).map((_, i) => (
+          <Skeleton key={i} className="h-14 w-full rounded-xl" />
+        ))}
+      </div>
+    </>
+  )
 }
 
 export function InformativeFormSkeleton() {
