@@ -3,8 +3,8 @@
 import { useRouter } from 'next/navigation'
 import { useForm, useWatch } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
-import { BackButton, Button } from '../../ui'
-import type { RoleOption } from '../../types'
+import { Button } from '../../ui'
+import { useRoleOptions } from '../../roles/queries'
 import { informativeErrorMessage } from './errors'
 import { InformativeFormBody } from './form-body'
 import { useCreateInformative, useUpdateInformative } from './mutations'
@@ -13,14 +13,14 @@ import type { IInformative } from './types'
 
 interface Props {
   basePath: string
-  roles: RoleOption[]
   item?: IInformative
 }
 
-export function InformativeFormScreen({ basePath, roles, item }: Props) {
+export function InformativeFormScreen({ basePath, item }: Props) {
   const router = useRouter()
   const create = useCreateInformative()
   const update = useUpdateInformative()
+  const { data: roles = [] } = useRoleOptions()
   const roleOptions = roles.map((r) => ({ value: r.id, label: r.name }))
 
   const {
@@ -55,33 +55,26 @@ export function InformativeFormScreen({ basePath, roles, item }: Props) {
   }
 
   return (
-    <>
-      <div className="flex items-center gap-2">
-        <BackButton fallback={basePath} />
-        <h1 className="text-xl font-semibold text-gray-800">{item ? 'Editar informativo' : 'Novo informativo'}</h1>
+    <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-5">
+      <InformativeFormBody
+        register={register}
+        control={control}
+        errors={errors}
+        roleOptions={roleOptions}
+        displayType={displayType}
+        initialUrl={item?.storageUrl}
+      />
+
+      {errors.root?.message && <p className="text-sm text-red-500">{errors.root.message}</p>}
+
+      <div className="flex justify-end gap-2">
+        <Button type="button" variant="ghost" disabled={isSubmitting} onClick={() => router.push(basePath)}>
+          Cancelar
+        </Button>
+        <Button type="submit" loading={isSubmitting}>
+          {isSubmitting ? 'Salvando...' : 'Salvar'}
+        </Button>
       </div>
-
-      <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-5">
-        <InformativeFormBody
-          register={register}
-          control={control}
-          errors={errors}
-          roleOptions={roleOptions}
-          displayType={displayType}
-          initialUrl={item?.storageUrl}
-        />
-
-        {errors.root?.message && <p className="text-sm text-red-500">{errors.root.message}</p>}
-
-        <div className="flex justify-end gap-2">
-          <Button type="button" variant="ghost" disabled={isSubmitting} onClick={() => router.push(basePath)}>
-            Cancelar
-          </Button>
-          <Button type="submit" loading={isSubmitting}>
-            {isSubmitting ? 'Salvando...' : 'Salvar'}
-          </Button>
-        </div>
-      </form>
-    </>
+    </form>
   )
 }

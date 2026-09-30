@@ -17,13 +17,13 @@ export function useHttp(): AxiosInstance {
   return client
 }
 
-export interface CelerisProviderProps {
+export interface CelerisClientProviderProps {
   token?: string
   apiBaseUrl: string
   children: ReactNode
 }
 
-export function CelerisProvider({ token, apiBaseUrl, children }: CelerisProviderProps) {
+export function CelerisClientProvider({ token, apiBaseUrl, children }: CelerisClientProviderProps) {
   const [queryClient] = useState(
     () =>
       new QueryClient({

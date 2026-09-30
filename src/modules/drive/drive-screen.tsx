@@ -6,8 +6,8 @@ import { LuChevronRight, LuFolderPlus, LuUpload } from 'react-icons/lu'
 import { Button, FileDropzone } from '../../ui'
 import { useShowFile } from '../../contexts/file-preview-context'
 import { useConfirm } from '../../contexts/confirm-modal-context'
-import type { RoleOption } from '../../types'
 import { extractErrorMessage } from '../../lib/errors'
+import { useRoleOptions } from '../../roles/queries'
 import { useDeleteDriveFile, useDeleteDriveFolder } from './mutations'
 import { useDriveFiles, useDriveFolders } from './queries'
 import type { DriveBreadcrumbItem } from './breadcrumb'
@@ -23,7 +23,6 @@ import { EditItemModal } from './edit-item-modal'
 export interface DriveScreenProps {
   basePath: string
   initialBreadcrumb: DriveBreadcrumbItem[]
-  roles: RoleOption[]
   canCreate: boolean
   canUpdate: boolean
   canDelete: boolean
@@ -34,7 +33,6 @@ type SelectedItem = { type: 'folder' | 'file'; id: number } | null
 export function DriveScreen({
   basePath,
   initialBreadcrumb: breadcrumb,
-  roles,
   canCreate,
   canUpdate,
   canDelete,
@@ -44,6 +42,7 @@ export function DriveScreen({
   const confirm = useConfirm()
   const deleteFolder = useDeleteDriveFolder()
   const deleteFile = useDeleteDriveFile()
+  const { data: roles = [] } = useRoleOptions()
   const fileInputRef = useRef<HTMLInputElement>(null)
   const dragCounter = useRef(0)
 

@@ -16,7 +16,8 @@
     "./contexts": "./src/contexts/index.ts",
     "./lib": "./src/lib/index.ts",
     "./types": "./src/types.ts",
-    "./provider": "./src/query/provider.tsx",
+    "./server": "./src/server/index.ts",
+    "./provider": "./src/query/celeris-provider.tsx",
     "./rich-text": "./src/rich-text/index.ts",
     "./drive": "./src/modules/drive/index.ts",
     "./informatives": "./src/modules/informatives/index.ts"
@@ -44,6 +45,7 @@
     "isomorphic-dompurify": "^3.19.0",
     "react-hook-form": "^7.74.0",
     "react-icons": "^5.6.0",
+    "server-only": "^0.0.1",
     "tailwind-merge": "^3.6.0",
     "zod": "^4.3.6"
   },

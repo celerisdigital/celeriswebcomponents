@@ -1,9 +1,9 @@
-export { DriveSection } from './drive-section'
+export { DrivePage } from './drive-page'
 export { DriveScreen } from './drive-screen'
-export { DriveSkeleton } from './drive-skeleton'
 export { buildDrivePath, parseDrivePath } from './breadcrumb'
 
-export type { DriveSectionProps } from './drive-section'
+export type { DrivePageProps } from './drive-page'
+export type { DrivePermissions } from './permissions'
 export type { DriveScreenProps } from './drive-screen'
 export type { DriveBreadcrumbItem } from './breadcrumb'
 export type { IDriveFile, IDriveFolder, IDriveStorage } from './types'

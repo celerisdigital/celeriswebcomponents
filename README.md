@@ -5,7 +5,7 @@ Telas compartilhadas entre as aplicações internas da Celeris.
 O pacote entrega duas coisas:
 
 - **Primitivos** (`/ui`, `/contexts`, `/lib`) — o design system, para as apps não manterem duas cópias.
-- **Módulos** (`/drive`) — telas completas, com dados, formulários e permissões.
+- **Módulos** (`/drive`, `/informatives`) — páginas completas, com dados, formulários e permissões.
 
 ---
 
@@ -73,7 +73,7 @@ acontece com ela?**
 | Ajustou espaçamento, cor, texto de erro | **patch** `1.0.1` | nada |
 | Refatorou o interior de um primitivo sem mudar props | **patch** `1.0.1` | nada |
 | Criou um módulo novo (`/relatorios`) | **minor** `1.1.0` | ganha um módulo; se não importar, nada muda |
-| Adicionou prop **opcional** em `DriveSection` | **minor** `1.1.0` | pode usar se quiser |
+| Adicionou prop **opcional** em `DrivePage` | **minor** `1.1.0` | pode usar se quiser |
 | Adicionou export novo no `index.ts` de um módulo | **minor** `1.1.0` | pode usar se quiser |
 | Adicionou prop **obrigatória** | **major** `2.0.0` | não compila até passar a prop |
 | Renomeou ou removeu uma prop | **major** `2.0.0` | quebra onde usava |
@@ -136,14 +136,28 @@ Sem isso o Tailwind não gera as classes usadas dentro do pacote.
 instaladas pela app. Todas as apps consumidoras devem estar na mesma major de `next`
 e `react` — o pacote publica TypeScript cru e é compilado pelo toolchain de cada app.
 
+**Config**, uma vez por app, num arquivo só de servidor:
+
+```ts
+// src/lib/celeris-config.ts
+import 'server-only'
+import { defineCelerisConfig } from '@celerisdigital/celeriswebcomponents/server'
+import { getAccessToken } from '@/lib/session'
+
+export const celerisConfig = defineCelerisConfig({
+  apiBaseUrl: process.env.API_BASE_URL ?? '',
+  apiPublicUrl: process.env.API_PUBLIC_URL ?? '',
+  getToken: getAccessToken,
+})
+```
+
+`apiBaseUrl` é a URL que o servidor Next usa; `apiPublicUrl`, a que o browser usa. `getToken` é
+chamado por request (a lib envolve em `cache()` do React, então o cookie é lido uma vez).
+
 **Provider**, no layout que envolve as telas:
 
 ```tsx
-const token = await getAccessToken()
-
-<CelerisProvider token={token} apiBaseUrl={process.env.API_BASE_URL ?? ''}>
-  {children}
-</CelerisProvider>
+<CelerisProvider config={celerisConfig}>{children}</CelerisProvider>
 ```
 
 ---
@@ -184,21 +198,26 @@ Fora do pacote de propósito: `conflict-banner` e `stepper` (só no trivor).
 ## Módulo: Arquivos
 
 ```tsx
-import { DriveSection, DriveSkeleton } from '@celerisdigital/celeriswebcomponents/drive'
-```
+// app/(private)/arquivos/page.tsx
+import { DrivePage } from '@celerisdigital/celeriswebcomponents/drive'
 
-### Props de `DriveSection`
+const drivePermissions = celerisPermissions({
+  canCreate: PERMISSIONS.drive.create,
+  canUpdate: PERMISSIONS.drive.update,
+  canDelete: PERMISSIONS.drive.delete,
+})
+
+export default function ArquivosPage({ searchParams }: { searchParams: Promise<{ path?: string }> }) {
+  return <DrivePage config={celerisConfig} permissions={drivePermissions} basePath="/arquivos" searchParams={searchParams} />
+}
+```
 
 | Prop | Tipo | Descrição |
 |---|---|---|
-| `token` | `string \| undefined` | access token, usado no prefetch server-side |
-| `apiBaseUrl` | `string` | base da API no servidor |
-| `basePath` | `string` | onde a tela está montada, ex: `/arquivos` |
-| `path` | `string \| undefined` | valor do search param `?path=` (breadcrumb) |
-| `roles` | `RoleOption[]` | perfis para permissionar pastas; `IRoleFull[]` encaixa por tipagem estrutural |
-| `canCreate` | `boolean` | `PERMISSIONS.drive.create` (1700) |
-| `canUpdate` | `boolean` | `PERMISSIONS.drive.update` (1701) |
-| `canDelete` | `boolean` | `PERMISSIONS.drive.delete` (1702) |
+| `config` | `CelerisConfig` | o `celerisConfig` da app |
+| `permissions` | `() => Promise<DrivePermissions>` | `canCreate`, `canUpdate`, `canDelete` |
+| `basePath` | `string` | onde a tela está montada |
+| `searchParams` | `Promise<{ path?: string }>` | o `searchParams` da page, sem `await` |
 
 O upload vai **direto do browser para a API** — a API precisa aceitar preflight
 `OPTIONS` com `Authorization` para a origem da app.
@@ -209,31 +228,30 @@ O upload vai **direto do browser para a API** — a API precisa aceitar prefligh
 
 ```tsx
 import {
-  InformativesListSection,
-  InformativesListSkeleton,
-  InformativeCreateSection,
-  InformativeEditSection,
-  InformativeFormSkeleton,
-  InformativesFeedSection,
-  InformativesFeedSkeleton,
-  InformativesModalQueueSection,
+  InformativesListPage,
+  InformativeCreatePage,
+  InformativeEditPage,
+  InformativesFeedPage,
+  InformativesModals,
+  type InformativesPermissions,
 } from '@celerisdigital/celeriswebcomponents/informatives'
 ```
 
-Cada componente é a tela inteira (título, voltar, ações, filtros, conteúdo). A app monta só o
-container da página, o gate de permissão e o `<Suspense>` com o skeleton correspondente:
-
-| Onde | Componente | Props |
+| Onde | Componente | Props além de `config` |
 |---|---|---|
-| gestão (ex: `/gerenciar-informativos`) | `InformativesListSection` | `token`, `apiBaseUrl`, `basePath`, `backFallback`, `roles`, `limit`, `offset`, `title`, `canCreate`, `canUpdate`, `canDelete` |
-| `<basePath>/novo` | `InformativeCreateSection` | `basePath`, `roles` |
-| `<basePath>/[id]/editar` | `InformativeEditSection` — chama `notFound()` se o id não existe | `token`, `apiBaseUrl`, `basePath`, `roles`, `id` |
-| feed (ex: `/informativos`) | `InformativesFeedSection` | `token`, `apiBaseUrl` |
-| layout privado, dentro do `CelerisProvider` | `InformativesModalQueueSection` em `<Suspense fallback={null}>` | `token`, `apiBaseUrl` |
+| gestão (ex: `/gerenciar-informativos`) | `InformativesListPage` | `permissions`, `basePath`, `backFallback`, `deniedRedirect`, `searchParams` |
+| `<basePath>/novo` | `InformativeCreatePage` | `permissions`, `basePath` |
+| `<basePath>/[id]/editar` | `InformativeEditPage` | `permissions`, `basePath`, `params` |
+| feed (ex: `/informativos`) | `InformativesFeedPage` | — |
+| layout privado, dentro do `CelerisProvider` | `InformativesModals` | — (já traz o próprio `Suspense`) |
 
-`limit` (padrão 10), `offset` e `title` vêm dos search params da página de gestão. O modal de
-detalhe usa `?informativeId=`. Criação, edição e exclusão invalidam `['informatives']`; a imagem é
-comprimida no browser antes do upload, que vai direto para a API.
+Cada Page pede só as permissões que usa: a gestão, `{ canRead, canCreate, canUpdate, canDelete }`; novo,
+`{ canCreate }`; editar, `{ canUpdate }`. Sem `canRead` a gestão redireciona
+para `deniedRedirect`; sem `canCreate`/`canUpdate`, novo/editar voltam para `basePath`. Esses redirects são
+rede de segurança — o guard de rota da app continua sendo a primeira barreira.
+
+A gestão é paginada por `limit` (padrão 10) e `offset`, com busca por `title`. O detalhe usa
+`?informativeId=`. A imagem é comprimida no browser antes do upload, que vai direto para a API.
 
 ---
 
@@ -243,28 +261,31 @@ Todo módulo exporta a mesma forma, no subpath `celeriswebcomponents/<nome>`:
 
 | Export | Tipo | Papel |
 |---|---|---|
-| `<Nome>Section` | server component | recebe token + contexto, faz prefetch, desidrata |
-| `<Nome>Skeleton` | client component | fallback do `Suspense` |
-| `<Nome>Screen` | client component | a tela |
+| `<Nome>Page` | server component síncrono | a página inteira: título e navegação na hora, dados em `Suspense` |
+| `<Nome>Permissions` | tipo | o que o resolver de permissões da app devolve |
 
-Três regras que mantêm isso extensível:
+Regras:
 
-1. **Módulos nunca importam uns aos outros.** O que um precisa do outro entra por prop.
-2. **Os primitivos crescem por acréscimo**, nunca mudando assinatura existente — são consumidos
+1. **Página recebe `config`, `permissions` (função), props de rota e `searchParams`/`params` do Next sem
+   `await`.** Nunca token, URL ou lista de domínio compartilhado (perfis) por prop — a lib busca.
+2. **Título e navegação fora do `Suspense`**; dados e o que depende de permissão dentro.
+3. **Módulos nunca importam uns aos outros.** Dado compartilhado (perfis) vive fora dos módulos, em `src/roles`.
+4. **Os primitivos crescem por acréscimo**, nunca mudando assinatura existente — são consumidos
    pelas apps diretamente, então mexer numa prop é breaking para todo mundo.
-3. **Query keys sempre com namespace do módulo** — `['drive', 'folders', id]`.
+5. **Query keys sempre com namespace** — `['drive', 'folders', id]`, `['roles', 'options']`.
 
 ### Instalar um módulo numa app
 
 A lib entrega componentes. Rota, permissão e menu são decisões da app — um módulo pode ser montado em
 qualquer caminho, com ou sem guard, com o nome de menu que a app quiser. Ao instalar:
 
-1. Criar a `page.tsx` na rota escolhida, com `<Suspense>` e o `<Nome>Skeleton` como fallback
+1. Criar a `page.tsx` na rota escolhida, renderizando só a `<Nome>Page` com o `celerisConfig`
 2. Passar `basePath` igual à rota onde a página foi criada
 3. Decidir o route guard em `proxy.ts` — e se a tela deve mesmo ser guardada
 4. Decidir o item de menu na sidebar, com o mesmo critério de permissão do guard
-5. Calcular as permissões de ação (`canCreate`, `canUpdate`, `canDelete`) com o `hasPermission` e o
-   `enums.ts` da própria app
+5. Passar as permissões que a Page pede, com os códigos do `enums.ts` da própria app — no d7, via o
+   helper `celerisPermissions({ canCreate: PERMISSIONS.x.create })` do `celeris-config.ts`, declarado na
+   própria page
 
 ---
 

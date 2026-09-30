@@ -9,17 +9,14 @@ export function InformativesFeedScreen() {
   const banners = items.filter((item) => item.banner)
   const modals = items.filter((item) => item.modal)
 
+  if (banners.length === 0 && modals.length === 0) {
+    return <p className="text-sm text-gray-500">Nenhum informativo no momento.</p>
+  }
+
   return (
-    <>
-      <h1 className="text-xl font-semibold text-gray-800">Informativos</h1>
-      {banners.length === 0 && modals.length === 0 ? (
-        <p className="text-sm text-gray-500">Nenhum informativo no momento.</p>
-      ) : (
-        <div className="flex flex-col gap-5">
-          <InformativeBanners banners={banners} />
-          <InformativeModalCards modals={modals} />
-        </div>
-      )}
-    </>
+    <div className="flex flex-col gap-5">
+      <InformativeBanners banners={banners} />
+      <InformativeModalCards modals={modals} />
+    </div>
   )
 }

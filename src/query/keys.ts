@@ -9,3 +9,7 @@ export const informativeKeys = {
   list: (query: { limit: number; offset: number; title?: string }) => ['informatives', 'list', query] as const,
   active: ['informatives', 'active'] as const,
 }
+
+export const roleKeys = {
+  options: ['roles', 'options'] as const,
+}

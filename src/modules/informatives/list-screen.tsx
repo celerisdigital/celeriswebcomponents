@@ -5,12 +5,10 @@ import { LuPencil, LuTrash2 } from 'react-icons/lu'
 import { Badge, Pagination, Table, type Column } from '../../ui'
 import { useConfirm } from '../../contexts/confirm-modal-context'
 import { useQueryModal } from '../../lib/use-query-modal'
-import type { RoleOption } from '../../types'
+import { useRoleOptions } from '../../roles/queries'
 import { InformativeDetailModal } from './detail-modal'
 import { informativeErrorMessage } from './errors'
-import { InformativesFilters } from './filters'
 import { useDeleteInformative } from './mutations'
-import { InformativesPageHeader } from './page-header'
 import { useInformatives } from './queries'
 import { RoleBadges } from './role-badges'
 import { deriveStatus, displayDateOnly, STATUS_LABEL, STATUS_VARIANT } from './status'
@@ -18,10 +16,7 @@ import type { IInformative, InformativesQuery } from './types'
 
 interface Props {
   basePath: string
-  backFallback: string
-  roles: RoleOption[]
   query: InformativesQuery
-  canCreate: boolean
   canUpdate: boolean
   canDelete: boolean
 }
@@ -38,19 +33,12 @@ function periodLabel(item: IInformative): string {
   return `Até ${end}`
 }
 
-export function InformativesListScreen({
-  basePath,
-  backFallback,
-  roles,
-  query,
-  canCreate,
-  canUpdate,
-  canDelete,
-}: Props) {
+export function InformativesListScreen({ basePath, query, canUpdate, canDelete }: Props) {
   const router = useRouter()
   const confirm = useConfirm()
   const deleteInformative = useDeleteInformative()
   const { data, isError } = useInformatives(query)
+  const { data: roles = [] } = useRoleOptions()
   const { id: selectedId, open, close } = useQueryModal('informativeId')
 
   const items = data?.rows ?? []
@@ -141,8 +129,6 @@ export function InformativesListScreen({
 
   return (
     <>
-      <InformativesPageHeader basePath={basePath} backFallback={backFallback} canCreate={canCreate} />
-      <InformativesFilters />
       {isError &&<p className="text-sm text-red-500">Não foi possível carregar os informativos.</p>}
       <Table
         columns={columns}
