@@ -63,13 +63,20 @@ function isSkipped(file) {
   return SKIPPED_ROOTS.includes(root) || TEMP_FILE.test(file)
 }
 
-function listFiles() {
-  const output = execFileSync('git', ['ls-files', '--cached', '--others', '--exclude-standard'], {
-    cwd: LIB_ROOT,
-    encoding: 'utf8',
-  })
+function gitFiles(args) {
+  const output = execFileSync('git', ['ls-files', ...args], { cwd: LIB_ROOT, encoding: 'utf8' })
 
   return output.split('\n').filter((file) => file && !isSkipped(file))
+}
+
+function listFiles() {
+  return gitFiles(['--cached', '--others', '--exclude-standard']).filter((file) =>
+    existsSync(join(LIB_ROOT, ...toParts(file))),
+  )
+}
+
+function listDeletedFiles() {
+  return gitFiles(['--deleted'])
 }
 
 function isIgnored(file) {
@@ -101,10 +108,14 @@ function removeFile(file, targets) {
 
 function syncAll(targets) {
   const files = listFiles()
+  const deleted = listDeletedFiles()
 
   for (const file of files) copyFile(file, targets)
 
+  for (const file of deleted) removeFile(file, targets)
+
   console.log(`[cwc] ${files.length} arquivos enviados para ${targets.length} app(s)`)
+  if (deleted.length > 0) console.log(`[cwc] ${deleted.length} arquivos apagados removidos das apps`)
 }
 
 function handleChange(file, targets) {
