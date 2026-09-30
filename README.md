@@ -11,30 +11,14 @@ O pacote entrega duas coisas:
 
 ## Instalação
 
-O pacote vive no GitHub Packages da org, em repositório privado. Três passos: os dois primeiros uma
-vez por máquina e por app, o terceiro sempre que trocar de versão.
-
-**1. Token pessoal**, no seu `~/.npmrc` — nunca no repositório:
-
-```
-//npm.pkg.github.com/:_authToken=<token do GitHub com escopo read:packages>
-```
-
-Sem ele, `yarn install` falha com **401**, não com "pacote não encontrado".
-
-**2. `.npmrc` na raiz da app**, este vai para o git e não contém segredo:
-
-```
-@celerisdigital:registry=https://npm.pkg.github.com
-```
-
-**3. Dependência no `package.json` da app**, com versão exata:
+O repositório é público e a app instala direto dele, pela tag — sem token, sem `.npmrc`:
 
 ```json
-"@celerisdigital/celeriswebcomponents": "1.0.0"
+"@celerisdigital/celeriswebcomponents": "github:celerisdigital/celeriswebcomponents#v1.1.0"
 ```
 
-Sem `^`: cada app aponta uma versão e atualiza quando decidir. Atualizar uma app não mexe na outra.
+Sempre uma tag fixa: cada app aponta uma versão e atualiza quando decidir. Atualizar uma app não mexe
+na outra.
 
 ---
 
@@ -107,28 +91,20 @@ major disfarçado de minor é alguém descobrir em produção.
 yarn typecheck
 yarn lint
 
-# 2. bump + commit + tag, num comando só
-yarn version --patch      # 1.0.0 → 1.0.1
-yarn version --minor      # 1.0.0 → 1.1.0
-yarn version --major      # 1.0.0 → 2.0.0
-
-# 3. publicar — o workflow .github/workflows/publish.yml roda ao ver a tag
-git push --follow-tags
+# 2. bump do "version" no package.json + commit
+# 3. tag igual ao version, e push dela
+git tag v1.1.0
+git push origin master v1.1.0
 ```
 
-Confira na aba **Packages** da org que a versão apareceu antes de seguir.
-
-```bash
-# 4. em cada app que quiser a versão nova, uma de cada vez
-yarn upgrade @celerisdigital/celeriswebcomponents@1.1.0
-```
+Em cada app que quiser a versão nova, uma de cada vez: trocar o sufixo `#v1.1.0` no `package.json` e
+rodar `yarn install`.
 
 Não é obrigatório atualizar as duas apps juntas — e é justamente esse o ganho. A d7 pode ir para
-`1.1.0` enquanto a trivor fica em `1.0.0`. Se algo quebrar, só uma app está exposta, e o rollback é
-voltar o número e rodar `yarn install`.
+`v1.1.0` enquanto a trivor fica em `v1.0.0`. Se algo quebrar, só uma app está exposta, e o rollback é
+voltar a tag e rodar `yarn install`.
 
-Uma versão publicada nunca é alterada: para corrigir, publica-se a próxima. O registry recusa
-republicar a mesma.
+Tag publicada não se move: para corrigir, cria-se a próxima.
 
 ---
 
@@ -143,15 +119,6 @@ transpilePackages: ['@celerisdigital/celeriswebcomponents'],
 O pacote publica TypeScript cru; o `transpilePackages` faz o Next compilá-lo junto com a app.
 Não é preciso `turbopack.resolveAlias` nem `experimental.externalDir` — os dois só existiam enquanto
 as apps consumiam a lib por `file:` (symlink para fora da raiz, com cópias próprias de React).
-
-**`.npmrc` do projeto**, commitado:
-
-```
-@celerisdigital:registry=https://npm.pkg.github.com
-```
-
-Só o mapeamento do escopo, nunca token. Cada dev coloca o próprio token classic com `read:packages`
-no `~/.npmrc` — o README de cada app explica o passo a passo.
 
 **`globals.css`**
 
@@ -183,46 +150,8 @@ const token = await getAccessToken()
 
 ## Deploy da app consumidora
 
-O build de produção roda `yarn install` numa máquina limpa, sem o `~/.npmrc` de ninguém. Sem estes
-três ajustes, o GitHub Packages responde `401` e o deploy quebra.
-
-**1. Liberar a app no pacote** — só uma vez, pela UI do GitHub: página do pacote →
-*Package settings* → *Manage Actions access* → adicionar o repo da app com role **Read**.
-
-**2. Dockerfile** — o `.npmrc` do projeto entra no `COPY`; o token entra como secret montado:
-
-```dockerfile
-# syntax=docker/dockerfile:1
-
-COPY package.json yarn.lock .npmrc ./
-RUN --mount=type=secret,id=npmrc,target=/root/.npmrc yarn install --frozen-lockfile
-```
-
-O secret só existe durante aquele `RUN` e não fica em nenhuma camada da imagem. **Nunca** usar
-`ARG NPM_TOKEN` + `echo > .npmrc` ou `ENV`: o token fica gravado na imagem e vai junto para o
-registry de containers.
-
-**3. Workflow** — o `GITHUB_TOKEN` automático basta, sem PAT nem secret cadastrado:
-
-```yaml
-jobs:
-  deploy:
-    permissions:
-      contents: read
-      packages: read
-    steps:
-      - name: Build and push image
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          printf '//npm.pkg.github.com/:_authToken=%s\n' "$NODE_AUTH_TOKEN" > "$RUNNER_TEMP/npmrc"
-          docker build -f pipelines/Dockerfile --secret id=npmrc,src="$RUNNER_TEMP/npmrc" -t $IMAGE .
-```
-
-O `GITHUB_TOKEN` só consegue ler o pacote porque o passo 1 foi feito. O arquivo em `$RUNNER_TEMP` é
-apagado pelo runner ao fim do job.
-
-Referência pronta: `pipelines/Dockerfile` e `.github/workflows/*.yml` do `d7-frontend`.
+Nada de especial: o `yarn install` do build baixa a lib pelo git, pela tag do `package.json` — sem
+secret, sem `--mount`, sem permissão de pacote. Referência: `pipelines/Dockerfile` do `d7-frontend`.
 
 ---
 
