@@ -3,7 +3,7 @@ import { HydrationBoundary, QueryClient, dehydrate } from '@tanstack/react-query
 import type { CelerisConfig } from '../../server/config'
 import { createServerHttp } from '../../server/http'
 import { driveKeys } from '../../query/keys'
-import { prefetchRoleOptions } from '../../roles/api'
+import { prefetchRoles } from '../../entities/roles/api'
 import { fetchDriveFiles, fetchDriveFolders } from './api'
 import { parseDrivePath } from './breadcrumb'
 import { DriveScreen } from './drive-screen'
@@ -36,7 +36,7 @@ async function DriveContent({ config, permissions, basePath, searchParams }: Dri
       queryKey: driveKeys.files(currentFolderId),
       queryFn: () => fetchDriveFiles(http, currentFolderId),
     }),
-    prefetchRoleOptions(queryClient, http),
+    prefetchRoles(queryClient, http),
   ])
 
   return (

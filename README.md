@@ -257,6 +257,36 @@ que vai direto para a API.
 
 ---
 
+## Módulo: Usuários
+
+```tsx
+import {
+  UsersPage,
+  UserCreatePage,
+  UserEditPage,
+  UserBlockRulesPage,
+  ImpersonationBanner,
+  ImpersonationOverlay,
+  type UsersPermissions,
+} from '@celerisdigital/celeriswebcomponents/users'
+```
+
+| Onde | Componente | Props além de `config` |
+|---|---|---|
+| gestão (ex: `/usuarios`) | `UsersPage` | `permissions`, `basePath`, `whiteLabelPath?`, `backFallback`, `deniedRedirect`, `searchParams` |
+| `<basePath>/novo` | `UserCreatePage` | `permissions`, `basePath`, `deniedRedirect` |
+| `<basePath>/[id]/editar` | `UserEditPage` | `permissions`, `basePath`, `deniedRedirect`, `params` |
+| `<basePath>/regras-bloqueio` | `UserBlockRulesPage` | `permissions`, `basePath`, `deniedRedirect` |
+| layout privado | `ImpersonationOverlay` | `impersonating` |
+| layout privado, com a sessão personificada | `ImpersonationBanner` | `userName`, `roleName?`, `startedAt?`, `exitPath` |
+
+Cada Page pede só as chaves de `UsersPermissions` que usa (`UsersListPermissions`, `UserCreatePermissions`,
+`UserEditPermissions`, `UserBlockRulesPermissions`). `whiteLabelPath` é opcional: sem ele, o atalho de white
+label da tabela some. Precisa dos adaptadores `session` (assumir e sair da identidade) e `downloads`
+(exportar xlsx) — ver "Adaptadores". Quem está logado (id, perfil, nível, personificação) a lib lê do token.
+
+---
+
 ## Contrato de módulo
 
 Todo módulo exporta a mesma forma, no subpath `celeriswebcomponents/<nome>`:
@@ -271,10 +301,11 @@ Regras:
 1. **Página recebe `config`, `permissions` (função), props de rota e `searchParams`/`params` do Next sem
    `await`.** Nunca token, URL ou lista de domínio compartilhado (perfis) por prop — a lib busca.
 2. **Título e navegação fora do `Suspense`**; dados e o que depende de permissão dentro.
-3. **Módulos nunca importam uns aos outros.** Dado compartilhado (perfis) vive fora dos módulos, em `src/roles`.
+3. **Módulos nunca importam uns aos outros.** Dado compartilhado vive fora dos módulos, em `src/entities`
+   (perfis, opções de usuário). Entidade nunca importa módulo; entidade pode usar outra entidade, sem ciclo.
 4. **Os primitivos crescem por acréscimo**, nunca mudando assinatura existente — são consumidos
    pelas apps diretamente, então mexer numa prop é breaking para todo mundo.
-5. **Query keys sempre com namespace** — `['drive', 'folders', id]`, `['roles', 'options']`.
+5. **Query keys sempre com namespace** — `['drive', 'folders', id]`, `['roles', 'full']`.
 
 ### Instalar um módulo numa app
 
@@ -288,6 +319,40 @@ qualquer caminho, com ou sem guard, com o nome de menu que a app quiser. Ao inst
 5. Passar as permissões que a Page pede, com os códigos do `enums.ts` da própria app — no d7, via o
    helper `celerisPermissions({ canCreate: PERMISSIONS.x.create })` do `celeris-config.ts`, declarado na
    própria page
+
+---
+
+## Adaptadores
+
+Alguns módulos precisam de algo que só a app sabe fazer. A lib declara a porta (`CelerisAdapters`) e a app
+pluga a implementação **uma vez**, num client component dentro do `CelerisProvider`:
+
+```tsx
+'use client'
+
+import { useMemo, type ReactNode } from 'react'
+import { CelerisAdaptersProvider } from '@celerisdigital/celeriswebcomponents/adapters'
+
+export function AppCelerisAdapters({ children }: { children: ReactNode }) {
+  const { startProcessing } = useDownloadNotification()
+  const adapters = useMemo(
+    () => ({
+      session: { assumeIdentity: assumeIdentityAction, exitIdentity: exitImpersonationAction, homePath: '/dashboard' },
+      downloads: { started: startProcessing },
+    }),
+    [startProcessing],
+  )
+
+  return <CelerisAdaptersProvider adapters={adapters}>{children}</CelerisAdaptersProvider>
+}
+```
+
+| Adaptador | Quem usa | Contrato |
+|---|---|---|
+| `session` | usuários — assumir e sair da identidade | `assumeIdentity(targetUserId)` e `exitIdentity()` são server actions da app: chamam a API e gravam os cookies. `homePath` é o destino depois de assumir |
+| `downloads` | usuários — exportar xlsx | `started(downloadId)` entrega o id à central de downloads da app |
+
+Adaptador ausente lança erro dizendo qual falta. A sessão é da app: o refresh token nunca passa pela lib.
 
 ---
 

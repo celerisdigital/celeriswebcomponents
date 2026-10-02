@@ -3,7 +3,7 @@ import { notFound, redirect } from 'next/navigation'
 import { HydrationBoundary, QueryClient, dehydrate } from '@tanstack/react-query'
 import type { CelerisConfig } from '../../server/config'
 import { createServerHttp } from '../../server/http'
-import { prefetchRoleOptions } from '../../roles/api'
+import { prefetchRoles } from '../../entities/roles/api'
 import { fetchInformative } from './api'
 import { InformativeFormHeader } from './form-header'
 import { InformativeFormScreen } from './form-screen'
@@ -26,7 +26,7 @@ async function EditContent({ config, permissions, basePath, params }: Informativ
   if (!perms.canUpdate) redirect(basePath)
 
   const queryClient = new QueryClient()
-  const [item] = await Promise.all([fetchInformative(http, numericId), prefetchRoleOptions(queryClient, http)])
+  const [item] = await Promise.all([fetchInformative(http, numericId), prefetchRoles(queryClient, http)])
   if (!item) notFound()
 
   return (

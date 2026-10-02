@@ -4,7 +4,7 @@ import { HydrationBoundary, QueryClient, dehydrate } from '@tanstack/react-query
 import type { CelerisConfig } from '../../server/config'
 import { createServerHttp } from '../../server/http'
 import { informativeKeys } from '../../query/keys'
-import { prefetchRoleOptions } from '../../roles/api'
+import { prefetchRoles } from '../../entities/roles/api'
 import { fetchInformatives } from './api'
 import { CreateInformativeLink } from './create-link'
 import { InformativesFilters } from './filters'
@@ -60,7 +60,7 @@ async function ListContent({ config, permissions, basePath, deniedRedirect, sear
       queryKey: informativeKeys.list(queries.expired),
       queryFn: () => fetchInformatives(http, queries.expired),
     }),
-    prefetchRoleOptions(queryClient, http),
+    prefetchRoles(queryClient, http),
   ])
 
   return (

@@ -3,7 +3,7 @@ import { redirect } from 'next/navigation'
 import { HydrationBoundary, QueryClient, dehydrate } from '@tanstack/react-query'
 import type { CelerisConfig } from '../../server/config'
 import { createServerHttp } from '../../server/http'
-import { prefetchRoleOptions } from '../../roles/api'
+import { prefetchRoles } from '../../entities/roles/api'
 import { InformativeFormHeader } from './form-header'
 import { InformativeFormScreen } from './form-screen'
 import type { InformativesPermissions } from './permissions'
@@ -20,7 +20,7 @@ async function CreateContent({ config, permissions, basePath }: InformativeCreat
   if (!perms.canCreate) redirect(basePath)
 
   const queryClient = new QueryClient()
-  await prefetchRoleOptions(queryClient, http)
+  await prefetchRoles(queryClient, http)
 
   return (
     <HydrationBoundary state={dehydrate(queryClient)}>

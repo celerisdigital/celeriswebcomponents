@@ -12,5 +12,32 @@ export const informativeKeys = {
 }
 
 export const roleKeys = {
-  options: ['roles', 'options'] as const,
+  full: ['roles', 'full'] as const,
+}
+
+export const userKeys = {
+  all: ['users'] as const,
+  lists: ['users', 'list'] as const,
+  list: (query: object) => ['users', 'list', query] as const,
+  trees: ['users', 'tree'] as const,
+  tree: (parentId: number) => ['users', 'tree', parentId] as const,
+  details: ['users', 'detail'] as const,
+  detail: (id: number) => ['users', 'detail', id] as const,
+  files: (id: number) => ['users', 'files', id] as const,
+  chain: (id: number) => ['users', 'chain', id] as const,
+  contractStatus: (id: number) => ['users', 'contract-status', id] as const,
+  permissionCatalog: ['users', 'permission-defs'] as const,
+  financeLevels: ['users', 'finance-levels'] as const,
+  blockRules: ['users', 'block-rules'] as const,
+  optionsByRole: (roleId: string) => ['users', 'options', 'role', roleId] as const,
+  optionsSearch: (roleId: string | null, search: string) => ['users', 'options', 'search', roleId, search] as const,
+  document: (cpf: string) => ['users', 'document', cpf] as const,
+}
+
+export const addressKeys = {
+  cep: (digits: string) => ['address', 'cep', digits] as const,
+}
+
+export const documentKeys = {
+  cnpj: (digits: string) => ['document', 'cnpj', digits] as const,
 }

@@ -2,7 +2,7 @@
 
 import { useConfirm } from '../../contexts/confirm-modal-context'
 import { useQueryModal } from '../../lib/use-query-modal'
-import { useRoleOptions } from '../../roles/queries'
+import { useRoleOptions } from '../../entities/roles/queries'
 import { ActiveInformativesList } from './active-list'
 import { InformativeDetailModal } from './detail-modal'
 import { informativeErrorMessage } from './errors'
