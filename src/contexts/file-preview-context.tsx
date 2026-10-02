@@ -1,6 +1,6 @@
 'use client'
 
-import { createContext, useCallback, useContext, useEffect, useState } from 'react'
+import { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react'
 import { LuX } from 'react-icons/lu'
 import { ImageAnalyzer } from '../ui/image-analyzer'
 
@@ -23,6 +23,7 @@ const FilePreviewContext = createContext<ShowFileFn | null>(null)
 
 export function FilePreviewProvider({ children }: { children: React.ReactNode }) {
   const [file, setFile] = useState<PreviewFile | null>(null)
+  const pressStartedOnBackdrop = useRef(false)
 
   const show = useCallback<ShowFileFn>((f) => {
     if (OPEN_IN_NEW_TAB_TYPES.has(f.contentType)) {
@@ -60,7 +61,12 @@ export function FilePreviewProvider({ children }: { children: React.ReactNode })
 
       {file && (isPdf || isImage || isDocsViewable) && (
         <div
-          onClick={close}
+          onMouseDown={(e) => {
+            pressStartedOnBackdrop.current = e.target === e.currentTarget
+          }}
+          onClick={() => {
+            if (pressStartedOnBackdrop.current) close()
+          }}
           className="fixed inset-0 bg-black/85 flex items-center justify-center z-[9999] p-6"
         >
           <button
