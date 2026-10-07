@@ -1,6 +1,6 @@
 {
   "name": "@celerisdigital/celeriswebcomponents",
-  "version": "2.1.0",
+  "version": "2.2.0",
   "description": "Telas compartilhadas entre as aplicações internas da Celeris",
   "license": "UNLICENSED",
   "repository": {
@@ -24,7 +24,8 @@
     "./rich-text": "./src/rich-text/index.ts",
     "./drive": "./src/modules/drive/index.ts",
     "./informatives": "./src/modules/informatives/index.ts",
-    "./users": "./src/modules/users/index.ts"
+    "./users": "./src/modules/users/index.ts",
+    "./profile": "./src/modules/profile/index.ts"
   },
   "scripts": {
     "dev": "node scripts/dev.mjs",

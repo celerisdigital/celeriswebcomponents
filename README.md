@@ -5,7 +5,7 @@ Telas compartilhadas entre as aplicações internas da Celeris.
 O pacote entrega duas coisas:
 
 - **Primitivos** (`/ui`, `/contexts`, `/lib`) — o design system, para as apps não manterem duas cópias.
-- **Módulos** (`/drive`, `/informatives`) — páginas completas, com dados, formulários e permissões.
+- **Módulos** (`/drive`, `/informatives`, `/users`, `/profile`) — páginas completas, com dados, formulários e permissões.
 
 ---
 
@@ -284,6 +284,23 @@ Cada Page pede só as chaves de `UsersPermissions` que usa (`UsersListPermission
 `UserEditPermissions`, `UserBlockRulesPermissions`). `whiteLabelPath` é opcional: sem ele, o atalho de white
 label da tabela some. Precisa dos adaptadores `session` (assumir e sair da identidade) e `downloads`
 (exportar xlsx) — ver "Adaptadores". Quem está logado (id, perfil, nível, personificação) a lib lê do token.
+
+---
+
+## Módulo: Perfil
+
+```tsx
+import { ProfilePage } from '@celerisdigital/celeriswebcomponents/profile'
+```
+
+| Onde | Componente | Props além de `config` |
+|---|---|---|
+| meu perfil (ex: `/perfil`) | `ProfilePage` | `deniedRedirect` |
+
+Sem `permissions`: todo usuário logado edita o próprio perfil. Os dados vêm de `GET /users/auth/me`; as seções
+visíveis (contato, endereço, dados bancários, dados complementares de PJ) vêm do `config` do perfil de quem está
+logado. Salvar faz `PATCH /users/me` e `router.refresh()`, para o layout da app pegar o nome novo. Sem token
+válido, ou se `/users/auth/me` falhar, redireciona para `deniedRedirect`.
 
 ---
 
