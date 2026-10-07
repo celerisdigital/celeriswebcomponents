@@ -146,19 +146,55 @@ import { getAccessToken } from '@/lib/session'
 
 export const celerisConfig = defineCelerisConfig({
   apiBaseUrl: process.env.API_BASE_URL ?? '',
-  apiPublicUrl: process.env.API_PUBLIC_URL ?? '',
+  apiPublicUrl: '/api/backend',
   getToken: getAccessToken,
 })
 ```
 
-`apiBaseUrl` é a URL que o servidor Next usa; `apiPublicUrl`, a que o browser usa. `getToken` é
-chamado por request (a lib envolve em `cache()` do React, então o cookie é lido uma vez).
+`apiBaseUrl` é a URL que o servidor Next usa, com o token de `getToken` (chamado por request, em
+`cache()` do React). `apiPublicUrl` é a URL que o browser usa — **sempre um proxy na mesma origem da
+app**: a lib nunca manda token pelo browser.
 
 **Provider**, no layout que envolve as telas:
 
 ```tsx
 <CelerisProvider config={celerisConfig}>{children}</CelerisProvider>
 ```
+
+**Proxy da API**, no `proxy.ts` da app. A lib entrega o proxy pronto; a app informa onde ficam os
+tokens, como renovar a sessão no back dela e como gravar os cookies novos:
+
+```ts
+// src/proxy.ts
+import { createCelerisApiProxy } from '@celerisdigital/celeriswebcomponents/api-proxy'
+
+const celerisApiProxy = createCelerisApiProxy({
+  apiBaseUrl: process.env.API_BASE_URL ?? '',
+  prefix: '/api/backend',
+  getTokens: (request) => ({
+    access: request.cookies.get('access_token')?.value,
+    refresh: request.cookies.get('refresh_token')?.value,
+  }),
+  refresh: refreshSession,      // (refreshToken) => Promise<{ access, refresh } | null>
+  persist: setSessionCookies,   // (response, session) => grava os cookies
+})
+
+export async function proxy(request: NextRequest) {
+  if (request.nextUrl.pathname.startsWith('/api/backend/')) return celerisApiProxy(request)
+  // ... resto do proxy da app
+}
+```
+
+O proxy injeta `Authorization: Bearer <access>` e remove o header `Cookie` antes de repassar; renova
+quando o access vence em menos de 2 min (`refreshMarginMs`); sem sessão válida responde `401` sem
+apagar cookie — a lib chama `router.refresh()`, e a navegação da app leva ao login. `refresh` lançando
+erro vira `502`. O matcher do `proxy.ts` precisa cobrir o prefixo, e o body do upload do drive exige
+`experimental.proxyClientMaxBodySize: '100mb'` no `next.config.ts`.
+
+Referência completa: `src/proxy.ts` do `d7-frontend`.
+
+**Migração da 2.x para a 3.0:** criar o proxy acima, trocar `apiPublicUrl` para o caminho dele e
+liberar o tamanho do body. Sem o proxy, todas as requests do browser vão sem autenticação.
 
 ---
 
@@ -219,8 +255,8 @@ export default function ArquivosPage({ searchParams }: { searchParams: Promise<{
 | `basePath` | `string` | onde a tela está montada |
 | `searchParams` | `Promise<{ path?: string }>` | o `searchParams` da page, sem `await` |
 
-O upload vai **direto do browser para a API** — a API precisa aceitar preflight
-`OPTIONS` com `Authorization` para a origem da app.
+O upload passa pelo proxy da app (ver "Requisitos da app consumidora"), com limite de 100 MB por
+arquivo — acima disso a tela recusa antes de enviar.
 
 ---
 

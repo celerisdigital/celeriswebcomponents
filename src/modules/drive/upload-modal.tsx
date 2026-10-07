@@ -8,6 +8,8 @@ import type { RoleOption } from '../../types'
 import { extractErrorMessage } from '../../lib/errors'
 import { useUpdateDriveFile, useUploadDriveFile } from './mutations'
 
+const MAX_UPLOAD_BYTES = 100 * 1024 * 1024
+
 export interface DriveUploadEntry {
   id: string
   file: File
@@ -91,6 +93,12 @@ export function UploadModal({ open, entries, setEntries, folderId, parentVisibil
 
     let hadError = false
     for (const entry of entries) {
+      if (entry.file.size > MAX_UPLOAD_BYTES) {
+        hadError = true
+        setEntries((prev) => prev.map((e) => (e.id === entry.id ? { ...e, status: 'error', error: 'Acima de 100 MB.' } : e)))
+        continue
+      }
+
       setEntries((prev) => prev.map((e) => (e.id === entry.id ? { ...e, status: 'uploading', error: undefined } : e)))
 
       const formData = new FormData()

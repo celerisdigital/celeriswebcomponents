@@ -234,7 +234,7 @@ export function DriveScreen({
 
       {isEmpty ? (
         canCreate ? (
-          <FileDropzone onFiles={addFiles} hint="Arraste arquivos aqui ou clique para selecionar" />
+          <FileDropzone onFiles={addFiles} hint="Arraste arquivos aqui ou clique para selecionar (até 100 MB)" />
         ) : (
           <div className="bg-white rounded-xl border border-gray-100 py-16 text-center text-sm text-gray-400">
             Nenhum item nesta pasta.

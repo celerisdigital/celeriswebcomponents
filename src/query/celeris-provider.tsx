@@ -7,12 +7,6 @@ export interface CelerisProviderProps {
   children: ReactNode
 }
 
-export async function CelerisProvider({ config, children }: CelerisProviderProps) {
-  const token = await config.getToken()
-
-  return (
-    <CelerisClientProvider token={token} apiBaseUrl={config.apiPublicUrl}>
-      {children}
-    </CelerisClientProvider>
-  )
+export function CelerisProvider({ config, children }: CelerisProviderProps) {
+  return <CelerisClientProvider apiBaseUrl={config.apiPublicUrl}>{children}</CelerisClientProvider>
 }

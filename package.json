@@ -1,6 +1,6 @@
 {
   "name": "@celerisdigital/celeriswebcomponents",
-  "version": "2.2.0",
+  "version": "3.0.0",
   "description": "Telas compartilhadas entre as aplicações internas da Celeris",
   "license": "UNLICENSED",
   "repository": {
@@ -19,6 +19,7 @@
     "./lib": "./src/lib/index.ts",
     "./types": "./src/types.ts",
     "./server": "./src/server/index.ts",
+    "./api-proxy": "./src/api-proxy/index.ts",
     "./provider": "./src/query/celeris-provider.tsx",
     "./adapters": "./src/adapters/index.ts",
     "./rich-text": "./src/rich-text/index.ts",
