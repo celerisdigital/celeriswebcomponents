@@ -10,6 +10,8 @@ import { useCreateBlockRule, useUpdateBlockRule } from '../mutations'
 import type { IBlockRule } from '../types'
 import {
   blockRuleSchema,
+  blockRuleScopeOptions,
+  blockRuleScopes,
   blockRuleTypeOptions,
   blockRuleTypes,
   buildBlockRuleConfig,
@@ -37,7 +39,14 @@ export function BlockRuleModal({ open, rule, roles, onClose }: Props) {
     formState: { errors, isSubmitting },
   } = useForm<BlockRuleValues>({
     resolver: zodResolver(blockRuleSchema),
-    defaultValues: { name: '', type: blockRuleTypes.role, active: true, roleIds: [], days: undefined },
+    defaultValues: {
+      name: '',
+      type: blockRuleTypes.role,
+      active: true,
+      scope: blockRuleScopes.self,
+      roleIds: [],
+      days: undefined,
+    },
   })
 
   const type = useWatch({ control, name: 'type' })
@@ -49,6 +58,7 @@ export function BlockRuleModal({ open, rule, roles, onClose }: Props) {
       name: rule?.name ?? '',
       type: rule?.type ?? blockRuleTypes.role,
       active: rule?.active ?? true,
+      scope: rule?.config.scope ?? blockRuleScopes.self,
       roleIds: rule?.config.roleIds ?? [],
       days: rule?.config.days,
     })
@@ -157,6 +167,16 @@ export function BlockRuleModal({ open, rule, roles, onClose }: Props) {
             </Field>
           </>
         )}
+
+        <Field label="Abrangência do bloqueio *" error={errors.scope?.message} asDiv>
+          <Controller
+            control={control}
+            name="scope"
+            render={({ field }) => (
+              <Select options={blockRuleScopeOptions} value={field.value} onChange={field.onChange} />
+            )}
+          />
+        </Field>
 
         <Switch label="Regra ativa" {...register('active')} />
       </form>

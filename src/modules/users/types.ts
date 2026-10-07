@@ -161,9 +161,12 @@ export interface IChangeStatusPayload {
 
 export type BlockRuleType = 'role' | 'typingInactivity' | 'loginInactivity'
 
+export type BlockRuleScope = 'self' | 'below' | 'hierarchy'
+
 export interface IBlockRuleConfig {
   roleIds?: string[]
   days?: number
+  scope?: BlockRuleScope
 }
 
 export interface IBlockRule {

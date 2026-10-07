@@ -10,7 +10,7 @@ import { useDeleteBlockRule } from '../mutations'
 import { useBlockRules } from '../queries'
 import type { IBlockRule } from '../types'
 import { BlockRuleModal } from './block-rule-modal'
-import { blockRuleTypeLabels } from './schemas'
+import { blockRuleScopeSummaries, blockRuleTypeLabels } from './schemas'
 
 interface Props {
   canCreate: boolean
@@ -20,14 +20,13 @@ interface Props {
 
 function configSummary(rule: IBlockRule, roleMap: Record<string, string>): string {
   const roleNames = rule.config.roleIds?.map((id) => roleMap[id] ?? id).join(', ')
+  const days =
+    rule.type !== 'role' && typeof rule.config.days === 'number'
+      ? `${rule.config.days} dia${rule.config.days === 1 ? '' : 's'}`
+      : undefined
+  const scope = rule.config.scope ? blockRuleScopeSummaries[rule.config.scope] : undefined
 
-  if (rule.type === 'role') return roleNames || '—'
-
-  if (typeof rule.config.days !== 'number') return roleNames || '—'
-
-  const days = `${rule.config.days} dia${rule.config.days === 1 ? '' : 's'}`
-
-  return roleNames ? `${days} · ${roleNames}` : days
+  return [days, roleNames, scope].filter(Boolean).join(' · ') || '—'
 }
 
 export function BlockRulesScreen({ canCreate, canUpdate, canDelete }: Props) {
