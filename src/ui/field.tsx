@@ -3,7 +3,7 @@ export interface FieldProps {
   children: React.ReactNode
   className?: string
   /** Mensagem de erro exibida abaixo do campo */
-  error?: string
+  error?: React.ReactNode
   /** Torna o wrapper um <div> em vez de <label> (útil quando o filho já tem label) */
   asDiv?: boolean
 }
