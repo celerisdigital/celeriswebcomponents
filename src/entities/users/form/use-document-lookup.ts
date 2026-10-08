@@ -3,8 +3,8 @@
 import { useCallback, useState } from 'react'
 import { digitsOnly } from '../../../lib/format'
 import { useCnpjLookup } from '../../../lib/document'
-import { useCpfLookup } from '../../../entities/users/queries'
-import type { DocumentOwner } from '../../../entities/users/types'
+import { useCpfLookup } from '../queries'
+import type { DocumentOwner } from '../types'
 
 export function useDocumentLookup() {
   const lookupCpf = useCpfLookup()

@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { Controller, useForm, type Control, type FieldErrors, type UseFormRegister } from 'react-hook-form'
+import { Controller, FormProvider, useForm, type FieldErrors, type UseFormRegister } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { LuLoader } from 'react-icons/lu'
 import { Button, Field, Select } from '../../../ui'
@@ -47,16 +47,7 @@ export function UserCreateScreen({ basePath, viewer, canCreateHorizontal, canMan
   const [commissionLevelId, setCommissionLevelId] = useState('')
   const [uploadPhase, setUploadPhase] = useState<UploadPhase | null>(null)
 
-  const {
-    register,
-    control,
-    handleSubmit,
-    setValue,
-    getValues,
-    setError,
-    clearErrors,
-    formState: { errors, isSubmitting },
-  } = useForm<CreateUserValues>({
+  const form = useForm<CreateUserValues>({
     resolver: zodResolver(createUserSchema),
     shouldUnregister: true,
     defaultValues: {
@@ -76,6 +67,16 @@ export function UserCreateScreen({ basePath, viewer, canCreateHorizontal, canMan
       responsible: { name: '', document: '' },
     },
   })
+  const {
+    register,
+    control,
+    handleSubmit,
+    setValue,
+    getValues,
+    setError,
+    clearErrors,
+    formState: { errors, isSubmitting },
+  } = form
 
   const selectedRole = roles.find((r) => r.id === selectedRoleId) ?? null
   const fields = selectedRole?.config.fields ?? {}
@@ -185,88 +186,89 @@ export function UserCreateScreen({ basePath, viewer, canCreateHorizontal, canMan
   )
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-6">
-      <UserFormBody
-        register={register as unknown as UseFormRegister<UpdateUserValues>}
-        control={control as unknown as Control<UpdateUserValues>}
-        errors={errors as unknown as FieldErrors<UpdateUserValues>}
-        setValue={setValue as (name: string, value: unknown) => void}
-        getValues={getValues as (name: string) => string | undefined}
-        clearErrors={clearErrors as (name: string) => void}
-        roleSection={roleElement}
-        ps={ps}
-        myRoleIsParent={myRoleIsParent}
-        parentsCount={parentsCount}
-        parentRoleOptions={parentRoleOptions}
-        parentRoleRequired={parentRoleRequired}
-        effectiveBelowMe={effectiveBelowMe}
-        isPJ={isPJ}
-        canBePJ={canBePJ}
-        setIsPJ={setIsPJ}
-        fields={fields}
-        selectedRole={selectedRole}
-        attachmentFiles={attachmentFiles}
-        onAttachmentFilesChange={setAttachmentFiles}
-        attachmentError={attachmentError}
-        needNFSe={needNFSe}
-        autoRequestWithdraw={autoRequestWithdraw}
-        onNeedNFSeChange={setNeedNFSe}
-        onAutoRequestWithdrawChange={setAutoRequestWithdraw}
-        financeLevels={financeLevels}
-        commissionLevelId={commissionLevelId}
-        onCommissionLevelChange={setCommissionLevelId}
-        passwordLabel="Senha"
-        passwordPlaceholder="Mínimo 6 caracteres"
-        canManageFinance={canManageFinance}
-        canUpdateBankAccount
-        canMigrate
-      />
+    <FormProvider {...form}>
+      <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-6">
+        <UserFormBody
+          register={register as unknown as UseFormRegister<UpdateUserValues>}
+          errors={errors as unknown as FieldErrors<UpdateUserValues>}
+          setValue={setValue as (name: string, value: unknown) => void}
+          getValues={getValues as (name: string) => string | undefined}
+          clearErrors={clearErrors as (name: string) => void}
+          roleSection={roleElement}
+          ps={ps}
+          myRoleIsParent={myRoleIsParent}
+          parentsCount={parentsCount}
+          parentRoleOptions={parentRoleOptions}
+          parentRoleRequired={parentRoleRequired}
+          effectiveBelowMe={effectiveBelowMe}
+          isPJ={isPJ}
+          canBePJ={canBePJ}
+          setIsPJ={setIsPJ}
+          fields={fields}
+          selectedRole={selectedRole}
+          attachmentFiles={attachmentFiles}
+          onAttachmentFilesChange={setAttachmentFiles}
+          attachmentError={attachmentError}
+          needNFSe={needNFSe}
+          autoRequestWithdraw={autoRequestWithdraw}
+          onNeedNFSeChange={setNeedNFSe}
+          onAutoRequestWithdrawChange={setAutoRequestWithdraw}
+          financeLevels={financeLevels}
+          commissionLevelId={commissionLevelId}
+          onCommissionLevelChange={setCommissionLevelId}
+          passwordLabel="Senha"
+          passwordPlaceholder="Mínimo 6 caracteres"
+          canManageFinance={canManageFinance}
+          canUpdateBankAccount
+          canMigrate
+        />
 
-      {errors.root && !uploadPhase && (
-        <p className="text-sm text-red-500 bg-red-50 border border-red-100 rounded-lg px-4 py-3">{errors.root.message}</p>
-      )}
+        {errors.root && !uploadPhase && (
+          <p className="text-sm text-red-500 bg-red-50 border border-red-100 rounded-lg px-4 py-3">{errors.root.message}</p>
+        )}
 
-      {uploadPhase?.status === 'uploading' && (
-        <div className="flex items-center gap-3 px-4 py-4 bg-gray-50 border border-gray-200 rounded-lg">
-          <LuLoader className="animate-spin h-4 w-4 text-gray-500 shrink-0" />
-          <p className="text-sm text-gray-600">
-            Enviando documentos… {uploadPhase.current} de {uploadPhase.total}
-          </p>
-        </div>
-      )}
+        {uploadPhase?.status === 'uploading' && (
+          <div className="flex items-center gap-3 px-4 py-4 bg-gray-50 border border-gray-200 rounded-lg">
+            <LuLoader className="animate-spin h-4 w-4 text-gray-500 shrink-0" />
+            <p className="text-sm text-gray-600">
+              Enviando documentos… {uploadPhase.current} de {uploadPhase.total}
+            </p>
+          </div>
+        )}
 
-      {uploadPhase?.status === 'error' && (
-        <div className="flex flex-col gap-3 px-4 py-4 bg-red-50 border border-red-100 rounded-lg">
-          <p className="text-sm font-medium text-red-700">
-            Usuário criado, mas {uploadPhase.failedFiles.length === 1 ? 'um arquivo não pôde' : 'alguns arquivos não puderam'}{' '}
-            ser enviado{uploadPhase.failedFiles.length > 1 ? 's' : ''}:
-          </p>
-          <ul className="text-sm text-red-600 list-disc list-inside">
-            {uploadPhase.failedFiles.map((f) => (
-              <li key={f}>{f}</li>
-            ))}
-          </ul>
-          <div className="flex gap-3 pt-1">
-            <Button type="button" variant="secondary" size="sm" onClick={() => router.push(basePath)}>
-              Ir para usuários
+        {uploadPhase?.status === 'error' && (
+          <div className="flex flex-col gap-3 px-4 py-4 bg-red-50 border border-red-100 rounded-lg">
+            <p className="text-sm font-medium text-red-700">
+              Usuário criado, mas {uploadPhase.failedFiles.length === 1 ? 'um arquivo não pôde' : 'alguns arquivos não puderam'}{' '}
+              ser enviado{uploadPhase.failedFiles.length > 1 ? 's' : ''}:
+            </p>
+            <ul className="text-sm text-red-600 list-disc list-inside">
+              {uploadPhase.failedFiles.map((f) => (
+                <li key={f}>{f}</li>
+              ))}
+            </ul>
+            <div className="flex gap-3 pt-1">
+              <Button type="button" variant="secondary" size="sm" onClick={() => router.push(basePath)}>
+                Ir para usuários
+              </Button>
+              <Button type="button" size="sm" onClick={() => router.push(`${basePath}/${uploadPhase.userId}/editar`)}>
+                Editar usuário
+              </Button>
+            </div>
+          </div>
+        )}
+
+        {!uploadPhase && (
+          <div className="flex justify-end gap-3 pt-2">
+            <Button type="button" variant="secondary" size="md" onClick={back} disabled={isSubmitting}>
+              Cancelar
             </Button>
-            <Button type="button" size="sm" onClick={() => router.push(`${basePath}/${uploadPhase.userId}/editar`)}>
-              Editar usuário
+            <Button type="submit" size="md" loading={isSubmitting} disabled={isSubmitting || !selectedRoleId}>
+              {isSubmitting ? 'Salvando...' : 'Salvar'}
             </Button>
           </div>
-        </div>
-      )}
-
-      {!uploadPhase && (
-        <div className="flex justify-end gap-3 pt-2">
-          <Button type="button" variant="secondary" size="md" onClick={back} disabled={isSubmitting}>
-            Cancelar
-          </Button>
-          <Button type="submit" size="md" loading={isSubmitting} disabled={isSubmitting || !selectedRoleId}>
-            {isSubmitting ? 'Salvando...' : 'Salvar'}
-          </Button>
-        </div>
-      )}
-    </form>
+        )}
+      </form>
+    </FormProvider>
   )
 }
