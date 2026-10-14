@@ -5,7 +5,7 @@ import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import { LuInfo, LuPalette, LuPencil, LuUsers } from 'react-icons/lu'
 import { Badge, EdgeScroll, Pagination, Table, type Column } from '../../../ui'
 import { cn } from '../../../lib/cn'
-import { formatDate, formatDocument, formatPhone } from '../../../lib/format'
+import { formatDate } from '../../../lib/format'
 import { useQueryModal } from '../../../lib/use-query-modal'
 import { useRoles } from '../../../entities/roles/queries'
 import { useUsersList } from '../context'
@@ -55,8 +55,6 @@ export function UsersTable({ query }: { query: IUsersQuery }) {
     { header: 'ID', cell: (u) => <span className="text-gray-400">{u.id}</span> },
     { header: 'Nome', cell: (u) => <span className="font-semibold text-gray-800">{u.name}</span>, className: 'whitespace-nowrap' },
     { header: 'Perfil', cell: (u) => <span className="text-gray-600">{roleMap[u.role] ?? u.role}</span>, className: 'whitespace-nowrap' },
-    { header: 'CPF/CNPJ', cell: (u) => <span className="text-gray-600">{formatDocument(u.document)}</span> },
-    { header: 'Telefone', cell: (u) => <span className="text-gray-600">{formatPhone(u.data?.phone)}</span> },
     { header: 'Data de cadastro', cell: (u) => <span className="text-gray-600">{formatDate(u.createdAt)}</span>, className: 'whitespace-nowrap' },
     {
       header: 'Status',

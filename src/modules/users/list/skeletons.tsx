@@ -14,7 +14,7 @@ export function UsersFiltersSkeleton() {
 }
 
 export function UsersTableSkeleton() {
-  return <TableSkeleton columns={9} rows={10} />
+  return <TableSkeleton columns={7} rows={10} />
 }
 
 export function UserFormSkeleton() {
