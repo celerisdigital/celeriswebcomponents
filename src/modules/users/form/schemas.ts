@@ -13,7 +13,7 @@ const baseFields = {
   email: z.string().email('E-mail inválido').max(128),
   document: z.string().min(1, 'Documento é obrigatório'),
   password: passwordField,
-  phone: phoneSchema,
+  phone: phoneSchema.optional(),
   address: addressSchema.optional(),
   bankAccount: bankAccountSchema.optional(),
   fantasy: z.string().optional(),
