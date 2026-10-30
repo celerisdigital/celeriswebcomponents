@@ -14,19 +14,22 @@ import { UserDetailModal } from '../detail/detail-modal'
 import { AssumeIdentityButton } from '../impersonation/assume-identity-button'
 import { useUsers } from '../queries'
 import { STATUS_MAP } from '../status'
-import type { IUser, IUsersQuery } from '../types'
+import type { IUser } from '../types'
+import { usersQueryFromParams } from './query'
 import { ChangeStatusButton, DeleteButton, MoveSubusersButton } from './row-actions'
+import { UsersTableSkeleton } from './skeletons'
 import { readParentChain, subordinatesSearch } from './subordinates'
 
 const iconLink = 'p-1.5 rounded-lg text-gray-400 hover:text-gray-700 hover:bg-gray-100 transition-colors'
 
-export function UsersTable({ query }: { query: IUsersQuery }) {
+export function UsersTable() {
   const { permissions, viewer, basePath, whiteLabelPath } = useUsersList()
-  const users = useUsers(query)
-  const { data: roles = [] } = useRoles()
   const router = useRouter()
   const pathname = usePathname()
   const searchParams = useSearchParams()
+  const query = usersQueryFromParams(searchParams)
+  const users = useUsers(query)
+  const { data: roles = [] } = useRoles()
   const { id: selectedUserId, open: openUser, close: closeUser } = useQueryModal('userId')
 
   const rows = (users.data?.rows ?? []).filter((u) => u.id !== viewer.id)
@@ -108,6 +111,8 @@ export function UsersTable({ query }: { query: IUsersQuery }) {
       },
     },
   ]
+
+  if (users.isPending) return <UsersTableSkeleton />
 
   return (
     <>

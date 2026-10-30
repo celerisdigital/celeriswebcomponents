@@ -1,4 +1,4 @@
-import type { AxiosInstance } from 'axios'
+import { isAxiosError, type AxiosInstance } from 'axios'
 import type {
   IBlockRule,
   IBlockRulePayload,
@@ -45,8 +45,11 @@ export async function fetchUser(http: AxiosInstance, id: number): Promise<IUser 
     const { data } = await http.get<IUser>(`/users/${id}`)
 
     return data
-  } catch {
-    return null
+  } catch (error) {
+    // Só o 404 é "não encontrado"; outra falha vai para o estado de erro da tela
+    if (isAxiosError(error) && error.response?.status === 404) return null
+
+    throw error
   }
 }
 

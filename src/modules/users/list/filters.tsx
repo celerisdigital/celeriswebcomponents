@@ -7,6 +7,7 @@ import { Button, DateRangeInput, Input, Select } from '../../../ui'
 import { useRoles } from '../../../entities/roles/queries'
 import { useFinanceLevels } from '../queries'
 import { STATUS_FILTER_OPTIONS } from '../status'
+import { UsersFiltersSkeleton } from './skeletons'
 import { SubordinatesTrail } from './subordinates-trail'
 
 interface Props {
@@ -20,7 +21,7 @@ export function UsersFilters({ canManageFinance, canCreateHorizontal, viewerLeve
   const pathname = usePathname()
   const searchParams = useSearchParams()
   const nameRef = useRef<HTMLInputElement>(null)
-  const { data: roles = [] } = useRoles()
+  const { data: roles = [], isPending: rolesPending } = useRoles()
   const { data: financeLevels = [] } = useFinanceLevels(canManageFinance)
 
   function update(key: string, value: string) {
@@ -36,6 +37,8 @@ export function UsersFilters({ canManageFinance, canCreateHorizontal, viewerLeve
   function submitSearch() {
     update('search', nameRef.current?.value ?? '')
   }
+
+  if (rolesPending) return <UsersFiltersSkeleton />
 
   const availableRoles = canCreateHorizontal ? roles : roles.filter((r) => r.level !== viewerLevel)
   const roleOptions = [{ value: '', label: 'Todos os perfis' }, ...availableRoles.map((r) => ({ value: r.id, label: r.name }))]

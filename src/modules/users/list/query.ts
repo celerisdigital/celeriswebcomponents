@@ -42,13 +42,10 @@ export function filtersFromParams(params: ParamsReader): IUsersFilters {
   }
 }
 
-export function buildUsersQuery(sp: UsersSearchParams): IUsersQuery {
-  const values = sp as Record<string, string | undefined>
-  const reader: ParamsReader = { get: (name) => values[name] ?? null }
-
+export function usersQueryFromParams(params: ParamsReader): IUsersQuery {
   return {
-    limit: resolvePageSize(sp.limit),
-    offset: Number(sp.offset ?? 0) || 0,
-    ...filtersFromParams(reader),
+    limit: resolvePageSize(params.get('limit') ?? undefined),
+    offset: Number(params.get('offset') ?? 0) || 0,
+    ...filtersFromParams(params),
   }
 }
