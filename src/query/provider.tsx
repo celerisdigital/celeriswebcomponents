@@ -1,6 +1,6 @@
 'use client'
 
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { QueryClient, QueryClientContext, QueryClientProvider } from '@tanstack/react-query'
 import { createContext, useContext, useMemo, useState, type ReactNode } from 'react'
 import { isAxiosError, type AxiosInstance } from 'axios'
 import { useRouter } from 'next/navigation'
@@ -25,13 +25,16 @@ export interface CelerisClientProviderProps {
 
 export function CelerisClientProvider({ apiBaseUrl, children }: CelerisClientProviderProps) {
   const router = useRouter()
-  const [queryClient] = useState(
-    () =>
-      new QueryClient({
-        defaultOptions: {
-          queries: { staleTime: 30_000, refetchOnWindowFocus: false, retry: 1 },
-        },
-      }),
+  // Client da app, se ela prover um em volta do CelerisProvider: telas da app e da lib dividem cache e opções padrão
+  const outerQueryClient = useContext(QueryClientContext)
+  const [ownQueryClient] = useState(() =>
+    outerQueryClient
+      ? null
+      : new QueryClient({
+          defaultOptions: {
+            queries: { staleTime: 30_000, refetchOnWindowFocus: false, retry: 1 },
+          },
+        }),
   )
 
   const http = useMemo(() => {
@@ -46,15 +49,17 @@ export function CelerisClientProvider({ apiBaseUrl, children }: CelerisClientPro
     return client
   }, [apiBaseUrl, router])
 
-  return (
-    <QueryClientProvider client={queryClient}>
-      <HttpContext.Provider value={http}>
-        <FilePreviewProvider>
-          <ToastProvider>
-            <ConfirmModalProvider>{children}</ConfirmModalProvider>
-          </ToastProvider>
-        </FilePreviewProvider>
-      </HttpContext.Provider>
-    </QueryClientProvider>
+  const content = (
+    <HttpContext.Provider value={http}>
+      <FilePreviewProvider>
+        <ToastProvider>
+          <ConfirmModalProvider>{children}</ConfirmModalProvider>
+        </ToastProvider>
+      </FilePreviewProvider>
+    </HttpContext.Provider>
   )
+
+  if (!ownQueryClient) return content
+
+  return <QueryClientProvider client={ownQueryClient}>{content}</QueryClientProvider>
 }
