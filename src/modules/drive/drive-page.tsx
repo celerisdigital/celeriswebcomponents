@@ -1,12 +1,6 @@
 import { Suspense } from 'react'
-import { HydrationBoundary, QueryClient, dehydrate } from '@tanstack/react-query'
 import type { CelerisConfig } from '../../server/config'
-import { createServerHttp } from '../../server/http'
-import { driveKeys } from '../../query/keys'
-import { prefetchRoles } from '../../entities/roles/api'
-import { fetchDriveFiles, fetchDriveFolders } from './api'
-import { parseDrivePath } from './breadcrumb'
-import { DriveScreen } from './drive-screen'
+import { DriveSection } from './drive-section'
 import { DriveSkeleton } from './drive-skeleton'
 import type { DrivePermissions } from './permissions'
 
@@ -18,38 +12,20 @@ export interface DrivePageProps {
   config: CelerisConfig
   permissions: () => Promise<DrivePermissions>
   basePath: string
+  /** Aceito sem uso: a tela lê o `path` da URL no client */
   searchParams: Promise<DriveSearchParams>
 }
 
-async function DriveContent({ config, permissions, basePath, searchParams }: DrivePageProps) {
-  const [sp, perms, http] = await Promise.all([searchParams, permissions(), createServerHttp(config)])
-  const breadcrumb = parseDrivePath(sp.path)
-  const currentFolderId = breadcrumb.length > 0 ? breadcrumb[breadcrumb.length - 1].id : undefined
-  const queryClient = new QueryClient()
-
-  await Promise.all([
-    queryClient.prefetchQuery({
-      queryKey: driveKeys.folders(currentFolderId),
-      queryFn: () => fetchDriveFolders(http, currentFolderId),
-    }),
-    queryClient.prefetchQuery({
-      queryKey: driveKeys.files(currentFolderId),
-      queryFn: () => fetchDriveFiles(http, currentFolderId),
-    }),
-    prefetchRoles(queryClient, http),
-  ])
+async function DriveContent({ permissions, basePath }: DrivePageProps) {
+  const perms = await permissions()
 
   return (
-    <HydrationBoundary state={dehydrate(queryClient)}>
-      <DriveScreen
-        key={sp.path ?? 'root'}
-        basePath={basePath}
-        initialBreadcrumb={breadcrumb}
-        canCreate={perms.canCreate}
-        canUpdate={perms.canUpdate}
-        canDelete={perms.canDelete}
-      />
-    </HydrationBoundary>
+    <DriveSection
+      basePath={basePath}
+      canCreate={perms.canCreate}
+      canUpdate={perms.canUpdate}
+      canDelete={perms.canDelete}
+    />
   )
 }
 

@@ -19,6 +19,7 @@ import { CreateFolderModal } from './create-folder-modal'
 import { UploadModal, type DriveUploadEntry } from './upload-modal'
 import { ItemDetailsModal, type DriveDetailsTarget } from './item-details-modal'
 import { EditItemModal } from './edit-item-modal'
+import { DriveSkeleton } from './drive-skeleton'
 
 export interface DriveScreenProps {
   basePath: string
@@ -58,8 +59,10 @@ export function DriveScreen({
   const currentFolderId = currentFolder?.id
   const anyModalOpen = createFolderOpen || uploadOpen || !!detailsTarget || !!editTarget
 
-  const { data: folders = [] } = useDriveFolders(currentFolderId)
-  const { data: files = [] } = useDriveFiles(currentFolderId)
+  const foldersQuery = useDriveFolders(currentFolderId)
+  const filesQuery = useDriveFiles(currentFolderId)
+  const folders = foldersQuery.data ?? []
+  const files = filesQuery.data ?? []
 
   const selectedFolder = selected?.type === 'folder' ? folders.find((f) => f.id === selected.id) : undefined
   const selectedFile = selected?.type === 'file' ? files.find((f) => f.id === selected.id) : undefined
@@ -185,6 +188,9 @@ export function DriveScreen({
   }
 
   const isEmpty = folders.length === 0 && files.length === 0
+  const isError = foldersQuery.isError || filesQuery.isError
+
+  if (foldersQuery.isPending || filesQuery.isPending) return <DriveSkeleton />
 
   return (
     <div
@@ -232,7 +238,9 @@ export function DriveScreen({
         )}
       </div>
 
-      {isEmpty ? (
+      {isError ? (
+        <p className="text-sm text-red-500">Não foi possível carregar os arquivos.</p>
+      ) : isEmpty ? (
         canCreate ? (
           <FileDropzone onFiles={addFiles} hint="Arraste arquivos aqui ou clique para selecionar (até 100 MB)" />
         ) : (
