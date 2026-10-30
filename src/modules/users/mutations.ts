@@ -25,14 +25,14 @@ import type {
   IUsersFilters,
 } from './types'
 
-function useInvalidateUsers() {
+function useInvalidateUsers({ refetchDetails = true }: { refetchDetails?: boolean } = {}) {
   const queryClient = useQueryClient()
 
   return () =>
     Promise.all([
       queryClient.invalidateQueries({ queryKey: userKeys.lists }),
       queryClient.invalidateQueries({ queryKey: userKeys.trees }),
-      queryClient.invalidateQueries({ queryKey: userKeys.details }),
+      queryClient.invalidateQueries({ queryKey: userKeys.details, refetchType: refetchDetails ? 'active' : 'none' }),
     ])
 }
 
@@ -48,7 +48,8 @@ export function useCreateUser() {
 
 export function useUpdateUser() {
   const http = useHttp()
-  const invalidate = useInvalidateUsers()
+  // O detalhe do usuário editado está montado no formulário: rebuscar atrasaria a volta à lista à toa
+  const invalidate = useInvalidateUsers({ refetchDetails: false })
 
   return useMutation({
     mutationFn: (body: IUpdateUserPayload) => updateUser(http, body),

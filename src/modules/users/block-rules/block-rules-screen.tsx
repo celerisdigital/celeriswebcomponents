@@ -6,6 +6,7 @@ import { Badge, Button, Table, type Column } from '../../../ui'
 import { useConfirm } from '../../../contexts/confirm-modal-context'
 import { useRoles } from '../../../entities/roles/queries'
 import { userErrorMessage } from '../errors'
+import { BlockRulesSkeleton } from '../list/skeletons'
 import { useDeleteBlockRule } from '../mutations'
 import { useBlockRules } from '../queries'
 import type { IBlockRule } from '../types'
@@ -32,7 +33,7 @@ function configSummary(rule: IBlockRule, roleMap: Record<string, string>): strin
 export function BlockRulesScreen({ canCreate, canUpdate, canDelete }: Props) {
   const confirm = useConfirm()
   const rules = useBlockRules()
-  const { data: roles = [] } = useRoles()
+  const { data: roles = [], isPending: rolesPending } = useRoles()
   const deleteRule = useDeleteBlockRule()
   const [modalOpen, setModalOpen] = useState(false)
   const [editTarget, setEditTarget] = useState<IBlockRule | undefined>()
@@ -105,6 +106,8 @@ export function BlockRulesScreen({ canCreate, canUpdate, canDelete }: Props) {
         ]
       : []),
   ]
+
+  if (rules.isPending || rolesPending) return <BlockRulesSkeleton />
 
   return (
     <div className="flex flex-col gap-4">
