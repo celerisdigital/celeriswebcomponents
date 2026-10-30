@@ -3,9 +3,12 @@
 import { InformativeBanners } from './banners'
 import { InformativeModalCards } from './modal-cards'
 import { useActiveInformatives } from './queries'
+import { InformativesFeedSkeleton } from './skeletons'
 
 export function InformativesFeedScreen() {
-  const { data: items = [] } = useActiveInformatives()
+  const { data: items = [], isPending } = useActiveInformatives()
+  if (isPending) return <InformativesFeedSkeleton />
+
   const banners = items.filter((item) => item.banner)
   const modals = items.filter((item) => item.modal)
 

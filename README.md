@@ -161,6 +161,9 @@ app**: a lib nunca manda token pelo browser.
 <CelerisProvider config={celerisConfig}>{children}</CelerisProvider>
 ```
 
+Se a app já usa React Query, ela pode prover o próprio `QueryClientProvider` em volta do
+`CelerisProvider`: a lib usa esse client (cache e opções padrão da app) em vez de criar o dela.
+
 **Proxy da API**, no `proxy.ts` da app. A lib entrega o proxy pronto; a app informa onde ficam os
 tokens, como renovar a sessão no back dela e como gravar os cookies novos:
 
@@ -279,7 +282,7 @@ import {
 | `<basePath>/novo` | `InformativeCreatePage` | `permissions`, `basePath` |
 | `<basePath>/[id]/editar` | `InformativeEditPage` | `permissions`, `basePath`, `params` |
 | feed (ex: `/informativos`) | `InformativesFeedPage` | — |
-| layout privado, dentro do `CelerisProvider` | `InformativesModals` | — (já traz o próprio `Suspense`) |
+| layout privado, dentro do `CelerisProvider` | `InformativesModals` | — (busca no client, sem `Suspense`) |
 
 Cada Page pede só as permissões que usa: a gestão, `{ canRead, canCreate, canUpdate, canDelete }`; novo,
 `{ canCreate }`; editar, `{ canUpdate }`. Sem `canRead` a gestão redireciona
@@ -346,14 +349,17 @@ Todo módulo exporta a mesma forma, no subpath `celeriswebcomponents/<nome>`:
 
 | Export | Tipo | Papel |
 |---|---|---|
-| `<Nome>Page` | server component síncrono | a página inteira: título e navegação na hora, dados em `Suspense` |
+| `<Nome>Page` | server component síncrono | a página inteira: título e navegação na hora, gate de permissão em `Suspense` |
 | `<Nome>Permissions` | tipo | o que o resolver de permissões da app devolve |
 
 Regras:
 
 1. **Página recebe `config`, `permissions` (função), props de rota e `searchParams`/`params` do Next sem
    `await`.** Nunca token, URL ou lista de domínio compartilhado (perfis) por prop — a lib busca.
-2. **Título e navegação fora do `Suspense`**; dados e o que depende de permissão dentro.
+2. **Título e navegação fora do `Suspense`**; dentro dele só o gate de permissão. O dado vem pelo hook na
+   tela client, com skeleton enquanto carrega e mensagem no erro — buscar no servidor refaz a chamada a
+   cada navegação, mesmo com o cache do browser em dia. Todo hook declara o `staleTime` da sua camada
+   (`src/query/stale-time.ts`).
 3. **Módulos nunca importam uns aos outros.** Dado compartilhado vive fora dos módulos, em `src/entities`
    (perfis, opções de usuário). Entidade nunca importa módulo; entidade pode usar outra entidade, sem ciclo.
 4. **Os primitivos crescem por acréscimo**, nunca mudando assinatura existente — são consumidos

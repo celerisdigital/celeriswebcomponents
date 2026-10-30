@@ -1,11 +1,6 @@
 import { Suspense } from 'react'
 import { redirect } from 'next/navigation'
-import { HydrationBoundary, QueryClient, dehydrate } from '@tanstack/react-query'
 import type { CelerisConfig } from '../../server/config'
-import { createServerHttp } from '../../server/http'
-import { informativeKeys } from '../../query/keys'
-import { prefetchRoles } from '../../entities/roles/api'
-import { fetchInformatives } from './api'
 import { CreateInformativeLink } from './create-link'
 import { InformativesFilters } from './filters'
 import { buildListQueries, type InformativesListSearchParams } from './list-queries'
@@ -37,46 +32,27 @@ async function CreateAction({
 }
 
 interface ListContentProps {
-  config: CelerisConfig
   permissions: Promise<InformativesPermissions>
   basePath: string
   deniedRedirect: string
   searchParams: Promise<InformativesListSearchParams>
 }
 
-async function ListContent({ config, permissions, basePath, deniedRedirect, searchParams }: ListContentProps) {
-  const [perms, sp, http] = await Promise.all([permissions, searchParams, createServerHttp(config)])
+async function ListContent({ permissions, basePath, deniedRedirect, searchParams }: ListContentProps) {
+  const [perms, sp] = await Promise.all([permissions, searchParams])
   if (!perms.canRead) redirect(deniedRedirect)
 
-  const queries = buildListQueries(sp)
-  const queryClient = new QueryClient()
-
-  await Promise.all([
-    queryClient.prefetchQuery({
-      queryKey: informativeKeys.list(queries.active),
-      queryFn: () => fetchInformatives(http, queries.active),
-    }),
-    queryClient.prefetchQuery({
-      queryKey: informativeKeys.list(queries.expired),
-      queryFn: () => fetchInformatives(http, queries.expired),
-    }),
-    prefetchRoles(queryClient, http),
-  ])
-
   return (
-    <HydrationBoundary state={dehydrate(queryClient)}>
-      <InformativesListScreen
-        basePath={basePath}
-        queries={queries}
-        canUpdate={perms.canUpdate}
-        canDelete={perms.canDelete}
-      />
-    </HydrationBoundary>
+    <InformativesListScreen
+      basePath={basePath}
+      queries={buildListQueries(sp)}
+      canUpdate={perms.canUpdate}
+      canDelete={perms.canDelete}
+    />
   )
 }
 
 export function InformativesListPage({
-  config,
   permissions,
   basePath,
   backFallback,
@@ -98,7 +74,6 @@ export function InformativesListPage({
       <InformativesFilters />
       <Suspense fallback={<InformativesListSkeleton />}>
         <ListContent
-          config={config}
           permissions={permissionsPromise}
           basePath={basePath}
           deniedRedirect={deniedRedirect}

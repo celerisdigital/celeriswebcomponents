@@ -11,18 +11,21 @@ import { useActiveInformatives } from './queries'
 export function InformativesModalQueue() {
   const { data: items = [] } = useActiveInformatives()
   const markViewed = useMarkInformativeViewed()
-  const [index, setIndex] = useState(0)
+  // Ids fechados (não índice): a rebusca no foco pode trocar a lista com a fila aberta
+  const [closedIds, setClosedIds] = useState<ReadonlySet<number>>(() => new Set())
 
   const modals = items.filter((item) => item.modal)
-  const current = modals[index]
+  const pending = modals.filter((item) => !closedIds.has(item.id))
+  const current = pending[0]
   if (!current) return null
 
+  const position = modals.length - pending.length + 1
   const imageUrl = current.storageUrl
   const hasText = !isRichTextEmpty(current.text)
 
   function handleClose() {
     markViewed.mutate(current.id)
-    setIndex((i) => i + 1)
+    setClosedIds((ids) => new Set(ids).add(current.id))
   }
 
   return (
@@ -37,7 +40,7 @@ export function InformativesModalQueue() {
         <div className="flex items-center justify-between gap-4">
           {modals.length > 1 ? (
             <span className="text-xs text-gray-500">
-              {index + 1} de {modals.length}
+              {position} de {modals.length}
             </span>
           ) : (
             <span />

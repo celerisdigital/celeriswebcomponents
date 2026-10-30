@@ -51,7 +51,6 @@ export function InformativeFormScreen({ basePath, item }: Props) {
     }
 
     router.push(basePath)
-    router.refresh()
   }
 
   return (

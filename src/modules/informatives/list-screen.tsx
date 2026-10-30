@@ -10,6 +10,7 @@ import { ExpiredInformativesTable } from './expired-table'
 import type { InformativesListQueries } from './list-queries'
 import { useDeleteInformative } from './mutations'
 import { useInformatives } from './queries'
+import { InformativesListSkeleton } from './skeletons'
 import type { IInformative } from './types'
 
 interface Props {
@@ -26,6 +27,8 @@ export function InformativesListScreen({ basePath, queries, canUpdate, canDelete
   const expired = useInformatives(queries.expired)
   const { data: roles = [] } = useRoleOptions()
   const { id: selectedId, open, close } = useQueryModal('informativeId')
+
+  if (active.isPending || expired.isPending) return <InformativesListSkeleton />
 
   const activeItems = active.data?.rows ?? []
   const expiredItems = expired.data?.rows ?? []

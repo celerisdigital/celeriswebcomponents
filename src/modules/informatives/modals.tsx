@@ -1,35 +1,10 @@
-import { Suspense } from 'react'
-import { HydrationBoundary, QueryClient, dehydrate } from '@tanstack/react-query'
+import type { ReactNode } from 'react'
 import type { CelerisConfig } from '../../server/config'
-import { createServerHttp } from '../../server/http'
-import { informativeKeys } from '../../query/keys'
-import { fetchActiveInformatives } from './api'
 import { InformativesModalQueue } from './modal-queue'
 
 export interface InformativesModalsProps {
   config: CelerisConfig
 }
 
-async function ModalsContent({ config }: InformativesModalsProps) {
-  const http = await createServerHttp(config)
-  const queryClient = new QueryClient()
-
-  await queryClient.prefetchQuery({
-    queryKey: informativeKeys.active,
-    queryFn: () => fetchActiveInformatives(http),
-  })
-
-  return (
-    <HydrationBoundary state={dehydrate(queryClient)}>
-      <InformativesModalQueue />
-    </HydrationBoundary>
-  )
-}
-
-export function InformativesModals({ config }: InformativesModalsProps) {
-  return (
-    <Suspense fallback={null}>
-      <ModalsContent config={config} />
-    </Suspense>
-  )
-}
+// A fila busca pelo client; config fica na assinatura para não quebrar as apps
+export const InformativesModals: (props: InformativesModalsProps) => ReactNode = () => <InformativesModalQueue />

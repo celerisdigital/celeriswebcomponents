@@ -9,6 +9,7 @@ export const informativeKeys = {
   list: (query: { limit: number; offset: number; title?: string; status?: 'current' | 'expired' }) =>
     ['informatives', 'list', query] as const,
   active: ['informatives', 'active'] as const,
+  detail: (id: number) => ['informatives', 'detail', id] as const,
 }
 
 export const roleKeys = {

@@ -1,11 +1,8 @@
 import { Suspense } from 'react'
 import { redirect } from 'next/navigation'
-import { HydrationBoundary, QueryClient, dehydrate } from '@tanstack/react-query'
 import type { CelerisConfig } from '../../server/config'
-import { createServerHttp } from '../../server/http'
-import { prefetchRoles } from '../../entities/roles/api'
+import { InformativeCreateScreen } from './create-screen'
 import { InformativeFormHeader } from './form-header'
-import { InformativeFormScreen } from './form-screen'
 import type { InformativesPermissions } from './permissions'
 import { InformativeFormSkeleton } from './skeletons'
 
@@ -15,18 +12,11 @@ export interface InformativeCreatePageProps {
   basePath: string
 }
 
-async function CreateContent({ config, permissions, basePath }: InformativeCreatePageProps) {
-  const [perms, http] = await Promise.all([permissions(), createServerHttp(config)])
+async function CreateContent({ permissions, basePath }: InformativeCreatePageProps) {
+  const perms = await permissions()
   if (!perms.canCreate) redirect(basePath)
 
-  const queryClient = new QueryClient()
-  await prefetchRoles(queryClient, http)
-
-  return (
-    <HydrationBoundary state={dehydrate(queryClient)}>
-      <InformativeFormScreen basePath={basePath} />
-    </HydrationBoundary>
-  )
+  return <InformativeCreateScreen basePath={basePath} />
 }
 
 export function InformativeCreatePage(props: InformativeCreatePageProps) {

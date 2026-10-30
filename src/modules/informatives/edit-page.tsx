@@ -1,12 +1,8 @@
 import { Suspense } from 'react'
-import { notFound, redirect } from 'next/navigation'
-import { HydrationBoundary, QueryClient, dehydrate } from '@tanstack/react-query'
+import { redirect } from 'next/navigation'
 import type { CelerisConfig } from '../../server/config'
-import { createServerHttp } from '../../server/http'
-import { prefetchRoles } from '../../entities/roles/api'
-import { fetchInformative } from './api'
+import { InformativeEditScreen } from './edit-screen'
 import { InformativeFormHeader } from './form-header'
-import { InformativeFormScreen } from './form-screen'
 import type { InformativesPermissions } from './permissions'
 import { InformativeFormSkeleton } from './skeletons'
 
@@ -17,23 +13,11 @@ export interface InformativeEditPageProps {
   params: Promise<{ id: string }>
 }
 
-async function EditContent({ config, permissions, basePath, params }: InformativeEditPageProps) {
-  const { id } = await params
-  const numericId = Number(id)
-  if (!numericId || Number.isNaN(numericId)) notFound()
-
-  const [perms, http] = await Promise.all([permissions(), createServerHttp(config)])
+async function EditContent({ permissions, basePath, params }: InformativeEditPageProps) {
+  const [{ id }, perms] = await Promise.all([params, permissions()])
   if (!perms.canUpdate) redirect(basePath)
 
-  const queryClient = new QueryClient()
-  const [item] = await Promise.all([fetchInformative(http, numericId), prefetchRoles(queryClient, http)])
-  if (!item) notFound()
-
-  return (
-    <HydrationBoundary state={dehydrate(queryClient)}>
-      <InformativeFormScreen basePath={basePath} item={item} />
-    </HydrationBoundary>
-  )
+  return <InformativeEditScreen key={id} basePath={basePath} id={id} />
 }
 
 export function InformativeEditPage(props: InformativeEditPageProps) {
