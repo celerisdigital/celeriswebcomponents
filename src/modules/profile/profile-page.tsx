@@ -1,12 +1,8 @@
 import { Suspense } from 'react'
 import { redirect } from 'next/navigation'
 import type { CelerisConfig } from '../../server/config'
-import { createServerHttp } from '../../server/http'
 import { getViewer } from '../../server/session'
-import { fetchRoles } from '../../entities/roles/api'
-import type { RoleFull } from '../../entities/roles/types'
-import { fetchMe } from './api'
-import { ProfileScreen } from './profile-screen'
+import { ProfileLoader } from './profile-loader'
 import { ProfileSkeleton } from './profile-skeleton'
 
 export interface ProfilePageProps {
@@ -15,17 +11,11 @@ export interface ProfilePageProps {
 }
 
 async function ProfileContent({ config, deniedRedirect }: ProfilePageProps) {
-  const [viewer, http] = await Promise.all([getViewer(config), createServerHttp(config)])
+  const viewer = await getViewer(config)
 
   if (!viewer) redirect(deniedRedirect)
 
-  const [me, roles] = await Promise.all([fetchMe(http), fetchRoles(http).catch((): RoleFull[] => [])])
-
-  if (!me) redirect(deniedRedirect)
-
-  const roleConfig = roles.find((role) => role.id === viewer.role)?.config ?? { fields: {} }
-
-  return <ProfileScreen me={me} roleConfig={roleConfig} />
+  return <ProfileLoader viewerRole={viewer.role} />
 }
 
 export function ProfilePage(props: ProfilePageProps) {

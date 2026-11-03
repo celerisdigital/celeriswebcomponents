@@ -12,6 +12,10 @@ export const informativeKeys = {
   detail: (id: number) => ['informatives', 'detail', id] as const,
 }
 
+export const profileKeys = {
+  me: ['profile', 'me'] as const,
+}
+
 export const roleKeys = {
   full: ['roles', 'full'] as const,
 }
