@@ -15,6 +15,14 @@ function dateToIso(d: Date | null): string {
   return `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`
 }
 
+/** Data incompleta (Invalid Date) não muda o rascunho: o período só troca com a data inteira. */
+function whenComplete(applyIsoDate: (isoDate: string) => void) {
+  return (date: Date | null) => {
+    if (date && Number.isNaN(date.getTime())) return
+    applyIsoDate(dateToIso(date))
+  }
+}
+
 function isoToDate(iso: string): Date | null {
   if (!iso) return null
   const [y, m, d] = iso.split('-').map(Number)
@@ -175,12 +183,12 @@ export function DateRangePicker({
             <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-2">
               <DateInput
                 value={isoToDate(draftStart)}
-                onChange={(d) => setDraftStart(dateToIso(d))}
+                onChange={whenComplete(setDraftStart)}
               />
               <span className="text-gray-400 text-sm">—</span>
               <DateInput
                 value={isoToDate(draftEnd)}
-                onChange={(d) => setDraftEnd(dateToIso(d))}
+                onChange={whenComplete(setDraftEnd)}
               />
             </div>
           </div>

@@ -7,6 +7,10 @@ import { DatePickerPopover } from './date-picker-popover'
 
 export interface DateInputProps {
   value: Date | null | undefined
+  /**
+   * `null` = campo vazio. Data incompleta ou inexistente chega como `Invalid Date` (`getTime()` é `NaN`),
+   * para o formulário barrar o envio (`z.date()` recusa) em vez de tratar como campo vazio.
+   */
   onChange: (value: Date | null) => void
   error?: string
   disabled?: boolean
@@ -26,6 +30,14 @@ const SECTIONS: Record<Section, { start: number; end: number; max: number; char:
   yyyy: { start: 6, end: 10, max: 4, char: 'A' },
 }
 const ORDER: Section[] = ['dd', 'mm', 'yyyy']
+
+function isInvalidDate(date: Date | null | undefined): date is Date {
+  return date instanceof Date && Number.isNaN(date.getTime())
+}
+
+function isEmpty(segments: Segs): boolean {
+  return !segments.dd && !segments.mm && !segments.yyyy
+}
 
 function pad(n: number, len = 2): string {
   return String(n).padStart(len, '0')
@@ -147,6 +159,8 @@ export const DateInput = forwardRef<HTMLInputElement, DateInputProps>(function D
   useImperativeHandle(ref, () => visibleRef.current as HTMLInputElement)
 
   useEffect(() => {
+    // Invalid Date veio deste campo (digitação incompleta): manter o que foi digitado
+    if (isInvalidDate(value)) return
     const next = segsFromDate(value)
     setSegs((cur) =>
       cur.dd === next.dd && cur.mm === next.mm && cur.yyyy === next.yyyy ? cur : next,
@@ -170,19 +184,20 @@ export const DateInput = forwardRef<HTMLInputElement, DateInputProps>(function D
 
   function commit(newSegs: Segs) {
     setSegs(newSegs)
-    const { dd, mm, yyyy } = newSegs
-    if (!dd && !mm && !yyyy) {
-      if (valueRef.current != null) onChange(null)
+    const currentValue = valueRef.current
+    if (isEmpty(newSegs)) {
+      if (currentValue != null) onChange(null)
       return
     }
-    if (dd.length === 2 && mm.length === 2 && yyyy.length === 4) {
-      const parsed = parseSegs(newSegs)
-      if (parsed) {
-        const clamped = clamp(parsed, min, max)
-        const cur = valueRef.current
-        if (!cur || cur.getTime() !== clamped.getTime()) onChange(clamped)
-      }
+    const { dd, mm, yyyy } = newSegs
+    const isComplete = dd.length === 2 && mm.length === 2 && yyyy.length === 4
+    const parsedDate = isComplete ? parseSegs(newSegs) : null
+    if (!parsedDate) {
+      if (!isInvalidDate(currentValue)) onChange(new Date(Number.NaN))
+      return
     }
+    const clampedDate = clamp(parsedDate, min, max)
+    if (!currentValue || currentValue.getTime() !== clampedDate.getTime()) onChange(clampedDate)
   }
 
   function handleKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
@@ -294,19 +309,21 @@ export const DateInput = forwardRef<HTMLInputElement, DateInputProps>(function D
     const el = e.currentTarget
     const start = el.selectionStart ?? 0
     const end = el.selectionEnd ?? start
-    const sec = sectionForCaret(start)
+    // Campo vazio começa sempre pelo dia: clicar no meio da máscara jogaria os dígitos no ano
+    const sec = isEmpty(segs) ? 'dd' : sectionForCaret(start)
     const [secStart, secEnd] = [SECTIONS[sec].start, SECTIONS[sec].end]
     if (start === secStart && end === secEnd) {
       if (active !== sec) setActive(sec)
       return
     }
     setActive(sec)
-    selectSection(sec)
+    // Direto, sem esperar render: a seção pode já estar ativa (setActive não renderiza) e o texto não muda aqui
+    el.setSelectionRange(secStart, secEnd)
   }
 
   function handleFocus(e: React.FocusEvent<HTMLInputElement>) {
     const start = e.currentTarget.selectionStart ?? 0
-    const sec = sectionForCaret(start)
+    const sec = isEmpty(segs) ? 'dd' : sectionForCaret(start)
     setActive(sec)
     selectSection(sec)
   }
