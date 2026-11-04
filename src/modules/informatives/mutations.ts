@@ -13,10 +13,15 @@ import {
 } from './api'
 import type { IInformative, InformativePayload, InformativesPage, InformativesQuery } from './types'
 
-function useInvalidateInformatives() {
+function useInvalidateInformatives({ refetchDetails = true }: { refetchDetails?: boolean } = {}) {
   const queryClient = useQueryClient()
 
-  return () => queryClient.invalidateQueries({ queryKey: informativeKeys.all })
+  return () =>
+    Promise.all([
+      queryClient.invalidateQueries({ queryKey: informativeKeys.lists }),
+      queryClient.invalidateQueries({ queryKey: informativeKeys.active }),
+      queryClient.invalidateQueries({ queryKey: informativeKeys.details, refetchType: refetchDetails ? 'active' : 'none' }),
+    ])
 }
 
 export function useCreateInformative() {
@@ -31,7 +36,8 @@ export function useCreateInformative() {
 
 export function useUpdateInformative() {
   const http = useHttp()
-  const invalidate = useInvalidateInformatives()
+  // O detalhe do informativo editado está montado no formulário: rebuscar atrasaria a volta à lista à toa
+  const invalidate = useInvalidateInformatives({ refetchDetails: false })
 
   return useMutation({
     mutationFn: ({ id, body }: { id: number; body: InformativePayload }) => updateInformative(http, id, body),
