@@ -157,28 +157,23 @@ export function UserEditScreen({
     back()
   }
 
-  const roleField = (
-    <Field label="Perfil *" asDiv>
-      <Select options={roles.map((r) => ({ value: r.id, label: r.name }))} value={user.role} disabled />
+  const organizationElement = organizationOptions && (
+    <Field label="Organização" asDiv>
+      <Select
+        options={[
+          { value: SYSTEM_ORGANIZATION, label: 'Nenhuma (perfil do sistema)' },
+          ...organizationOptions.map((o) => ({ value: String(o.id), label: getOrganizationOptionLabel(o) })),
+        ]}
+        value={selectedRole ? String(selectedRole.organizationId ?? SYSTEM_ORGANIZATION) : undefined}
+        disabled
+      />
     </Field>
   )
 
-  const roleElement = organizationOptions ? (
-    <div className="flex flex-col gap-4">
-      <Field label="Organização" asDiv>
-        <Select
-          options={[
-            { value: SYSTEM_ORGANIZATION, label: 'Nenhuma (perfil do sistema)' },
-            ...organizationOptions.map((o) => ({ value: String(o.id), label: getOrganizationOptionLabel(o) })),
-          ]}
-          value={selectedRole ? String(selectedRole.organizationId ?? SYSTEM_ORGANIZATION) : undefined}
-          disabled
-        />
-      </Field>
-      {roleField}
-    </div>
-  ) : (
-    roleField
+  const roleElement = (
+    <Field label="Perfil *" asDiv>
+      <Select options={roles.map((r) => ({ value: r.id, label: r.name }))} value={user.role} disabled />
+    </Field>
   )
 
   return (
@@ -190,6 +185,7 @@ export function UserEditScreen({
           setValue={setValue as (name: string, value: unknown) => void}
           getValues={getValues as (name: string) => string | undefined}
           clearErrors={clearErrors as (name: string) => void}
+          organizationSection={organizationElement}
           roleSection={roleElement}
           ps={ps}
           myRoleIsParent={myRoleIsParent}

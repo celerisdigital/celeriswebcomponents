@@ -103,8 +103,6 @@ export function UserCreateScreen({
     setSelectedRoleId(roleId)
     setIsPJ(false)
 
-    if (!roleId) return
-
     const next = parentContextFor(roles.find((r) => r.id === roleId) ?? null, roles, viewer.role)
     ps.resetForRole(next.myRoleIsParent, next.parentRoleOptions)
   }
@@ -191,7 +189,18 @@ export function UserCreateScreen({
       ]
     : []
 
-  const roleField = (
+  const organizationElement = organizationOptions && (
+    <Field label="Organização" asDiv>
+      <Select
+        options={organizationSelectOptions}
+        value={selectedOrganizationId}
+        onChange={handleOrganizationChange}
+        autocomplete
+      />
+    </Field>
+  )
+
+  const roleElement = (
     <Field label="Perfil *" error={errors.role?.message} asDiv>
       <Controller
         name="role"
@@ -212,22 +221,6 @@ export function UserCreateScreen({
     </Field>
   )
 
-  const roleElement = organizationOptions ? (
-    <div className="flex flex-col gap-4">
-      <Field label="Organização" asDiv>
-        <Select
-          options={organizationSelectOptions}
-          value={selectedOrganizationId}
-          onChange={handleOrganizationChange}
-          autocomplete
-        />
-      </Field>
-      {roleField}
-    </div>
-  ) : (
-    roleField
-  )
-
   return (
     <FormProvider {...form}>
       <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-6">
@@ -237,6 +230,7 @@ export function UserCreateScreen({
           setValue={setValue as (name: string, value: unknown) => void}
           getValues={getValues as (name: string) => string | undefined}
           clearErrors={clearErrors as (name: string) => void}
+          organizationSection={organizationElement}
           roleSection={roleElement}
           ps={ps}
           myRoleIsParent={myRoleIsParent}

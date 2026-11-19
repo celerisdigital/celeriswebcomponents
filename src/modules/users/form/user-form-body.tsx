@@ -17,6 +17,7 @@ import { BELOW_ME, useParentSelect } from './use-parent-select'
 interface Props {
   register: UseFormRegister<UpdateUserValues>
   errors: FieldErrors<UpdateUserValues>
+  organizationSection?: ReactNode
   roleSection: ReactNode
   ps: ReturnType<typeof useParentSelect>
   myRoleIsParent: boolean
@@ -56,7 +57,7 @@ interface Props {
 
 export function UserFormBody({
   register, errors,
-  roleSection, ps,
+  organizationSection, roleSection, ps,
   myRoleIsParent, parentsCount, parentRoleOptions, parentRoleRequired, effectiveBelowMe,
   isPJ, canBePJ, setIsPJ,
   fields, selectedRole, setValue, getValues, clearErrors,
@@ -97,6 +98,8 @@ export function UserFormBody({
     <>
       <Section title="Perfil">
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          {organizationSection && <div className="sm:col-span-2">{organizationSection}</div>}
+
           <div className={showParentSection ? '' : 'sm:col-span-2'}>
             {roleSection}
           </div>

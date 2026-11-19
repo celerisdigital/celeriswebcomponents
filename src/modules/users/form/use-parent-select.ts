@@ -44,7 +44,7 @@ export function useParentSelect({ initialBelowMe = false, initialParentRoleId = 
     } else if (parentRoleOptions.length > 0) {
       handleParentRoleChange(parentRoleOptions[0].id)
     } else {
-      setSelectedParentRoleId('')
+      handleParentRoleChange('')
     }
   }
 
