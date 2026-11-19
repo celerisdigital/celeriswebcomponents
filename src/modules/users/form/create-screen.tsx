@@ -9,10 +9,11 @@ import { Button, Field, Select } from '../../../ui'
 import { digitsOnly } from '../../../lib/format'
 import { useBack } from '../../../lib/use-back'
 import { useRoles } from '../../../entities/roles/queries'
-import type { Viewer } from '../../../types'
+import type { OrganizationOption, Viewer } from '../../../types'
 import { userErrorMessage } from '../errors'
 import { useCreateUser, useUploadUserFile } from '../mutations'
 import { useFinanceLevels } from '../queries'
+import { filterRolesByOrganization, SYSTEM_ORGANIZATION } from './organization-scope'
 import { parentContextFor } from './parent-context'
 import { buildExtraData, createUserSchema, type CreateUserValues, type UpdateUserValues } from './schemas'
 import { BELOW_ME, useParentSelect } from './use-parent-select'
@@ -23,13 +24,20 @@ export interface UserCreateScreenProps {
   viewer: Viewer
   canCreateHorizontal: boolean
   canManageFinance: boolean
+  organizationOptions: OrganizationOption[] | null
 }
 
 type UploadPhase =
   | { status: 'uploading'; total: number; current: number }
   | { status: 'error'; failedFiles: string[]; userId: number }
 
-export function UserCreateScreen({ basePath, viewer, canCreateHorizontal, canManageFinance }: UserCreateScreenProps) {
+export function UserCreateScreen({
+  basePath,
+  viewer,
+  canCreateHorizontal,
+  canManageFinance,
+  organizationOptions,
+}: UserCreateScreenProps) {
   const router = useRouter()
   const back = useBack(basePath)
   const createUser = useCreateUser()
@@ -39,6 +47,7 @@ export function UserCreateScreen({ basePath, viewer, canCreateHorizontal, canMan
   const roles = allRoles.filter((r) => (canCreateHorizontal ? r.level <= viewer.level : r.level < viewer.level))
 
   const [selectedRoleId, setSelectedRoleId] = useState('')
+  const [selectedOrganizationId, setSelectedOrganizationId] = useState(SYSTEM_ORGANIZATION)
   const [isPJ, setIsPJ] = useState(false)
   const [attachmentFiles, setAttachmentFiles] = useState<File[]>([])
   const [attachmentError, setAttachmentError] = useState<string | undefined>()
@@ -98,6 +107,12 @@ export function UserCreateScreen({ basePath, viewer, canCreateHorizontal, canMan
 
     const next = parentContextFor(roles.find((r) => r.id === roleId) ?? null, roles, viewer.role)
     ps.resetForRole(next.myRoleIsParent, next.parentRoleOptions)
+  }
+
+  function handleOrganizationChange(organizationId: string) {
+    setSelectedOrganizationId(organizationId)
+    setValue('role', '')
+    handleRoleChange('')
   }
 
   async function onSubmit(values: CreateUserValues) {
@@ -164,14 +179,26 @@ export function UserCreateScreen({ basePath, viewer, canCreateHorizontal, canMan
     router.push(basePath)
   }
 
-  const roleElement = (
+  // Com organizações, o Perfil mostra só os perfis da organização escolhida (ou os do sistema)
+  const roleSelectOptions = (organizationOptions ? filterRolesByOrganization(roles, selectedOrganizationId) : roles).map(
+    (r) => ({ value: r.id, label: r.name }),
+  )
+  const organizationSelectOptions = organizationOptions
+    ? [
+        { value: SYSTEM_ORGANIZATION, label: 'Nenhuma (perfis do sistema)' },
+        // Organização inativa não recebe usuário novo (o backend recusa)
+        ...organizationOptions.filter((o) => o.active).map((o) => ({ value: String(o.id), label: o.name })),
+      ]
+    : []
+
+  const roleField = (
     <Field label="Perfil *" error={errors.role?.message} asDiv>
       <Controller
         name="role"
         control={control}
         render={({ field }) => (
           <Select
-            options={roles.map((r) => ({ value: r.id, label: r.name }))}
+            options={roleSelectOptions}
             placeholder="Selecione um perfil..."
             value={field.value}
             onChange={(v) => {
@@ -183,6 +210,22 @@ export function UserCreateScreen({ basePath, viewer, canCreateHorizontal, canMan
         )}
       />
     </Field>
+  )
+
+  const roleElement = organizationOptions ? (
+    <div className="flex flex-col gap-4">
+      <Field label="Organização" asDiv>
+        <Select
+          options={organizationSelectOptions}
+          value={selectedOrganizationId}
+          onChange={handleOrganizationChange}
+          autocomplete
+        />
+      </Field>
+      {roleField}
+    </div>
+  ) : (
+    roleField
   )
 
   return (

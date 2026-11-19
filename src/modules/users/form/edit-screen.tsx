@@ -9,11 +9,12 @@ import { useBack } from '../../../lib/use-back'
 import { useRoles } from '../../../entities/roles/queries'
 import { toAddressValues, toBankAccountValues, toPhoneValue } from '../../../entities/users/form'
 import type { UserOption } from '../../../entities/users/types'
-import type { Viewer } from '../../../types'
+import type { OrganizationOption, Viewer } from '../../../types'
 import { userErrorMessage } from '../errors'
 import { useUpdateUser } from '../mutations'
 import { useFinanceLevels } from '../queries'
 import type { IUser } from '../types'
+import { getOrganizationOptionLabel, SYSTEM_ORGANIZATION } from './organization-scope'
 import { parentContextFor } from './parent-context'
 import { buildExtraData, updateUserSchema, type UpdateUserValues } from './schemas'
 import { BELOW_ME, useParentSelect } from './use-parent-select'
@@ -29,6 +30,7 @@ export interface UserEditScreenProps {
   canMigrate: boolean
   canUpdateBankAccount: boolean
   canManageFinance: boolean
+  organizationOptions: OrganizationOption[] | null
 }
 
 export function UserEditScreen({
@@ -41,6 +43,7 @@ export function UserEditScreen({
   canMigrate,
   canUpdateBankAccount,
   canManageFinance,
+  organizationOptions,
 }: UserEditScreenProps) {
   const back = useBack(basePath)
   const updateUser = useUpdateUser()
@@ -154,10 +157,28 @@ export function UserEditScreen({
     back()
   }
 
-  const roleElement = (
+  const roleField = (
     <Field label="Perfil *" asDiv>
       <Select options={roles.map((r) => ({ value: r.id, label: r.name }))} value={user.role} disabled />
     </Field>
+  )
+
+  const roleElement = organizationOptions ? (
+    <div className="flex flex-col gap-4">
+      <Field label="Organização" asDiv>
+        <Select
+          options={[
+            { value: SYSTEM_ORGANIZATION, label: 'Nenhuma (perfil do sistema)' },
+            ...organizationOptions.map((o) => ({ value: String(o.id), label: getOrganizationOptionLabel(o) })),
+          ]}
+          value={selectedRole ? String(selectedRole.organizationId ?? SYSTEM_ORGANIZATION) : undefined}
+          disabled
+        />
+      </Field>
+      {roleField}
+    </div>
+  ) : (
+    roleField
   )
 
   return (

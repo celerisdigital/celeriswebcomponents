@@ -9,3 +9,9 @@ export interface Viewer {
   level: number
   inPlaceId: number | null
 }
+
+export interface OrganizationOption {
+  id: number
+  name: string
+  active: boolean
+}

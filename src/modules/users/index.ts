@@ -19,3 +19,4 @@ export type {
   UserBlockRulesPermissions,
 } from './permissions'
 export type { IUser } from './types'
+export type { OrganizationOption } from '../../types'

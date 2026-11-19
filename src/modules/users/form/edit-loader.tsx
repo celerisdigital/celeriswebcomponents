@@ -2,7 +2,7 @@
 
 import { useRoles } from '../../../entities/roles/queries'
 import type { UserOption } from '../../../entities/users/types'
-import type { Viewer } from '../../../types'
+import type { OrganizationOption, Viewer } from '../../../types'
 import { UserFormSkeleton } from '../list/skeletons'
 import { useUser } from '../queries'
 import type { IUser, IUserParent } from '../types'
@@ -15,6 +15,7 @@ interface Props {
   canMigrate: boolean
   canUpdateBankAccount: boolean
   canManageFinance: boolean
+  organizationOptions: OrganizationOption[] | null
 }
 
 function parseId(id: string) {

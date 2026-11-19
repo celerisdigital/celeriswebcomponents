@@ -22,6 +22,7 @@ export interface RoleFull {
   id: string
   name: string
   level: number
+  organizationId?: number | null
   config: RoleConfig
   parents: RoleParent[]
 }
